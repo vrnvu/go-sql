@@ -8,60 +8,75 @@ I immidiatly thought about wrk, I've used it in the past.
 ## Functional
 ### Comptime
     - Read file
-        - File exists and permissions to read
-        - Enforce optional limits (file size, max line length '\n')
+        - Yes: File exists and permissions to read
+        - No: Enforce optional limits (file size, max line length '\n')
     - Read stdin
-        - Delimiter on new line '"\n"'
-        - Max line length to prevent abuse
+        - Yes: Delimiter on new line '"\n"'
+        - No: Max line length to prevent abuse
     - Set TigerData target
-        - Test connectivity first (smoke ping)
-        - Test table schema is correct
+        - Yes: Test connectivity first (smoke ping)
+        - Yes: Test table schema is correct
             - Smoke test: one row via prepared statement and validate serialization
     - Set number of workers/clients
-        - Hard limit workers? 
+        - Yes: Hard limit workers? 
             - i.e workers <= number_of_phisical_cores?
 ### Runtime
-    - Mapping hostmap = worker (simple Round Robin baseline)
+    - Yes: Mapping hostmap = worker (simple Round Robin baseline)
     - Error handling?
-        - If something panics or context is cancel abort benchmark
-        - What if a request to TigerData fails? Do we backoff/retry?   
+        - Yes: If something panics or context is cancel abort benchmark
+        - Yes: What if a request to TigerData fails? Do we backoff/retry?   
+            - It's important that we don't panic and retry instead, then mark as failed
     - Connections
         - Pool size, per-worker connections, simple backoff/retries?
+            Yes: N workers, 1 connection per worker, 3 retries without backof are fine
     - Logging and aggregation
-        - Structured JSON logs; per-request + aggregated
-- Future enhancements
+        - Yes: Logs will be simple
+        - No: We don't need fancy visualizations of data
+        - Yes: Print data aggregation as a simple table string() in stdout
+- Future enhancements (not needed now)
     - Take ideas from wrk/wrk2 (precise rate to TigerData)
     - Expand into e2e/integration tests
     - Expose as a lib/sdk (now we have a bin/cli, but it could be use to expose this as a library)
+        - Note: Workerpool module needs re-work if we would like to expose as library so coroutine and ctx management is simpler
 
 ## Non Functional:
 - Correctness: What happens if “somethings” panics?
-    - If this is a benchmark tool, my first instinct is to consider the full test a failure. It needs to be fully repeated.
-    - If otherwise we continued the test, i.e a worker panics but we spawn another to recover on runtime, the throughput and load in our target TigerData instance will be altered. Particularly affecting tail latency and throughput if system gets over-loaded.
-    - Similarly, seems to me it doesn’t make sense to persist intermediate data to a file.
+    - Note: If this is a benchmark tool, my first instinct is to consider the full test a failure. It needs to be fully repeated.
+    - Note: If otherwise we continued the test, i.e a worker panics but we spawn another to recover on runtime, the throughput and load in our target TigerData instance will be altered. Particularly affecting tail latency and throughput if system gets over-loaded.
+    - Yes: We will panic only when major events that affect the correctness of the system, i.e a worker completly crashes
+    - Yes: Simple retries on HTTP queries to TigerData, skip invalid rows in .csv
+    - No: No need to have snapshots or recoveries
+    - Note: Similarly, seems to me it doesn’t make sense to persist intermediate data to a file.
         - I thought about the resource limitation that our `.csv` file doesn't fit in memory. 
         - Also in other testing scenarios, testing correct logic, it would make sense to persist intermediate results in order to have snapshots and recoveries. This way we don’t need to re-trigger the full test if “something” panics.
 - Observability / Metrics of the tool
     - Useful to have meta metrics about the tool itself, like retries to TigerData if some requests fail or even dropped.
+    - Yes: we want to have skipped csv rows, failed/retries of queries
 - Resources to consider of the benchmarking instance:
     - CPU: Core / threads number, best ratio for M:N threading
+        - Yes: One core - One worker
     - MEM:
-        - Can we load the input .csv in memory?
-        - Can we store and aggregate results in-memory?
+        - Yes: Can we load the input .csv in memory?
+        - Yes: Can we store and aggregate results in-memory?
+        - Note: No hard-limit has been imposed. Still I think is good practice to have some upper bounds to avoid users allocating a slice of 10PB of RAM which will crash.
     - DISK: Any limits?
         - If MEM constraints we will need to consider efficient disk usage
+        - No: We can assume reading from disk (.csv file) doesn't need particular attention
+        - Yes: Only if reading a .csv row fails we can decide: crash or skip row
     - NETWORK: Connectivity, speed and bandwidth
+        - No: no need for particular attention
 - Security
     - What assumptions about tool security usages can we make?
     - Do we need to protect the TigerData instance from possible exploits in our CLI?
+    - No: We no need for particular attention
 
-## Design
+## Design (TODO)
 
 High level:
 
 <img width="834" height="406" alt="Screenshot 2025-10-23 at 09 52 59" src="https://github.com/user-attachments/assets/b83f7d9b-9455-4878-a8ca-f7bc8c597ce9" />
 
-- cli: the cli sets the target, number of workers and input IO (stdin or file).
+- cli: the cli sets the target, number of workers, timeout and input IO (stdin or file).
 - csv reader / query generator: reads our input IO and generates queries, streams them to our worker pool as they are generated.
 - worker pool: loadbalances to workers, the worker makes the http request and publishes results to a channel, aggregates metrics collected from the results
 
