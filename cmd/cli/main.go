@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/vrnvu/go-sql/internal/query"
 	"github.com/vrnvu/go-sql/internal/workerpool"
@@ -16,9 +17,11 @@ import (
 func main() {
 	var inputPath string
 	var numWorkers int
+	var timeoutSeconds int
 
 	flag.StringVar(&inputPath, "input", "", "Path to input CSV (defaults to stdin)")
 	flag.IntVar(&numWorkers, "workers", 0, "Number of workers to use (defaults to number of cores)")
+	flag.IntVar(&timeoutSeconds, "timeout", 0, "Timeout in seconds (defaults to no timeout)")
 	flag.Parse()
 
 	var reader *csv.Reader
@@ -40,6 +43,11 @@ func main() {
 		log.Fatalf("number of workers must be greater than 0 and less than the number of cores: %d", numCores)
 	}
 
+	if timeoutSeconds < 0 {
+		flag.Usage()
+		log.Fatalf("timeout must be greater than 0")
+	}
+
 	fields, err := reader.Read()
 	if err != nil {
 		log.Fatalf("error reading fields: %v", err)
@@ -51,8 +59,7 @@ func main() {
 		log.Fatalf("expected fields to be hostname, start_time, end_time, got %v", fields)
 	}
 
-	// TODO Since this is IO bound to Network, I'd consider a timeout
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
 	wp, err := workerpool.New(numWorkers)
@@ -77,13 +84,8 @@ func main() {
 			log.Fatalf("Error reading query: %v", err)
 		}
 		if !hasMore {
-			break // Finished reading
+			break
 		}
-
-		// TODO test context cancellation
-		// if query.Hostname == "host_000002" {
-		// 	cancel()
-		// }
 
 		if err := wp.RunQuery(ctx, query); err != nil {
 			log.Fatalf("Error running query: %v", err)

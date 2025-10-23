@@ -19,7 +19,9 @@ func TestCompareSimpleAndReservoirWhenInSampleSize(t *testing.T) {
 		simpleMetrics, err := NewSimpleWithCapacity(sampleSize)
 		assert.NoError(t, err)
 
-		reservoirMetrics, err := NewReservoirWithSize(sampleSize)
+		reservoirMetrics, err := NewReservoirWithSize(sampleSize, func(n int) int {
+			panic("this function should never be called in this test")
+		})
 		assert.NoError(t, err)
 
 		for range sampleSize {
@@ -43,7 +45,9 @@ func TestCompareSimpleAndReservoirWhenSampleSizeIsGreaterThanReservoirSampleSize
 
 		// Reservoir sample size is half of the sample size so we trigger the sampling algorithm
 		reservoirSampleSize := capacity / 2
-		reservoirMetrics, err := NewReservoirWithSize(reservoirSampleSize)
+		reservoirMetrics, err := NewReservoirWithSize(reservoirSampleSize, func(n int) int {
+			return 0
+		})
 		assert.NoError(t, err)
 		assert.NotNil(t, reservoirMetrics)
 

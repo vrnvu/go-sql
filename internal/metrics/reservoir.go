@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"fmt"
-	"math/rand"
 	"slices"
 	"time"
 )
@@ -22,18 +21,20 @@ type Reservoir struct {
 	minResponse         time.Duration
 	maxResponse         time.Duration
 	sampleSize          int
+	funcRandIntn        func(n int) int
 }
 
 // NewReservoir creates a new Reservoir with default sample size
-func NewReservoir() *Reservoir {
+func NewReservoir(funcRandIntn func(n int) int) *Reservoir {
 	return &Reservoir{
-		responses:  make([]time.Duration, 0, ReservoirDefaultSampleSize),
-		sampleSize: ReservoirDefaultSampleSize,
+		responses:    make([]time.Duration, 0, ReservoirDefaultSampleSize),
+		sampleSize:   ReservoirDefaultSampleSize,
+		funcRandIntn: funcRandIntn,
 	}
 }
 
 // NewReservoirWithSize creates a new Reservoir with specified sample size
-func NewReservoirWithSize(sampleSize int) (*Reservoir, error) {
+func NewReservoirWithSize(sampleSize int, funcRandIntn func(n int) int) (*Reservoir, error) {
 	if sampleSize < 1 {
 		return nil, fmt.Errorf("sampleSize must be greater than 0")
 	}
@@ -43,8 +44,9 @@ func NewReservoirWithSize(sampleSize int) (*Reservoir, error) {
 	}
 
 	return &Reservoir{
-		responses:  make([]time.Duration, 0, sampleSize),
-		sampleSize: sampleSize,
+		responses:    make([]time.Duration, 0, sampleSize),
+		sampleSize:   sampleSize,
+		funcRandIntn: funcRandIntn,
 	}, nil
 }
 
@@ -66,9 +68,7 @@ func (r *Reservoir) AddResponse(duration time.Duration) {
 		// And the main difference with a Simple metrics with fixed capacity
 		// Simple panics.
 		// Reservoir samples randomly and replaces the old value with the new one.
-		// TODO: We can make it deterministic by using a seed, and have deterministic tests
-		//nolint:gosec
-		j := rand.Intn(r.numberOfQueries)
+		j := r.funcRandIntn(r.numberOfQueries)
 		if j < r.sampleSize {
 			r.responses[j] = duration
 		}
