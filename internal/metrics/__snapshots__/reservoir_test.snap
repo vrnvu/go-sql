@@ -1,0 +1,8 @@
+
+[TestNewReservoirWithSizeZeroSize - 1]
+sampleSize must be greater than 0
+---
+
+[TestNewReservoirWithSizeTooManySize - 1]
+sampleSize must be less than 20000
+---

@@ -1,0 +1,8 @@
+
+[TestCompareSimpleAndReservoirWhenInSampleSize - 1]
+metrics.Result{NumberOfQueries:22, TotalProcessingTime:22000000000, MinResponse:1000000000, MedianResponse:1000000000, AverageResponse:1000000000, MaxResponse:1000000000}
+---
+
+[TestCompareSimpleAndReservoirWhenInSampleSize - 2]
+metrics.Result{NumberOfQueries:22, TotalProcessingTime:22000000000, MinResponse:1000000000, MedianResponse:1000000000, AverageResponse:1000000000, MaxResponse:1000000000}
+---

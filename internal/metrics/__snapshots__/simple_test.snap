@@ -4,7 +4,7 @@ capacity must be greater than 0
 ---
 
 [TestNewSimpleWithCapacityTooManyCapacity - 1]
-capacity must be less than 1000000
+capacity must be less than 20000
 ---
 
 [TestSimpleMetricsAggregate - 1]

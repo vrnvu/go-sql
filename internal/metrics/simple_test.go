@@ -11,11 +11,12 @@ import (
 
 func TestNewSimpleWithCapacityProperties(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		capacity := rapid.IntRange(1, 1_000_000).Draw(t, "capacity")
+		capacity := rapid.IntRange(1, SimpleMaxCapacity).Draw(t, "capacity")
 		metrics, err := NewSimpleWithCapacity(capacity)
 		assert.NoError(t, err)
 		assert.NotNil(t, metrics)
-		assert.Equal(t, capacity, len(metrics.responses))
+		assert.Equal(t, 0, len(metrics.responses))
+		assert.Equal(t, capacity, cap(metrics.responses))
 	})
 }
 
@@ -34,13 +35,19 @@ func TestNewSimpleWithCapacityTooManyCapacity(t *testing.T) {
 }
 
 func TestSimpleAddResponsePanicsWhenMaxCapacityIsReached(t *testing.T) {
-	metrics := NewSimple()
-	for range SimpleMaxCapacity {
-		metrics.AddResponse(time.Duration(1) * time.Second)
-	}
+	rapid.Check(t, func(t *rapid.T) {
+		capacity := rapid.IntRange(1, SimpleMaxCapacity).Draw(t, "capacity")
+		metrics, err := NewSimpleWithCapacity(capacity)
+		assert.NoError(t, err)
+		assert.NotNil(t, metrics)
 
-	assert.Panics(t, func() {
-		metrics.AddResponse(1 * time.Second)
+		for range capacity {
+			metrics.AddResponse(time.Duration(1) * time.Second)
+		}
+
+		assert.Panics(t, func() {
+			metrics.AddResponse(1 * time.Second)
+		})
 	})
 }
 

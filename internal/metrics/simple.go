@@ -9,19 +9,21 @@ import (
 
 const (
 	// SimpleMaxCapacity is the maximum number of responses that can be stored in the Simple metrics
-	SimpleMaxCapacity = 1_000_000
+	SimpleMaxCapacity = 20_000
 )
 
 // Simple metrics keeps everything in memory
 // Not scalable, but simple and easy to implement and we can use it to verify correctness of other implemntations
 type Simple struct {
 	responses []time.Duration
+	capacity  int
 }
 
 // NewSimple creates a new Simple metrics
 func NewSimple() *Simple {
 	return &Simple{
 		responses: make([]time.Duration, 0),
+		capacity:  SimpleMaxCapacity,
 	}
 }
 
@@ -38,14 +40,15 @@ func NewSimpleWithCapacity(capacity int) (*Simple, error) {
 	}
 
 	return &Simple{
-		responses: make([]time.Duration, capacity),
+		responses: make([]time.Duration, 0, capacity),
+		capacity:  capacity,
 	}, nil
 }
 
 // AddResponse adds a response duration to the Simple metrics
 func (s *Simple) AddResponse(duration time.Duration) {
-	if SimpleMaxCapacity == len(s.responses) {
-		log.Panicf("Simple metrics has reached the max capacity of %d", SimpleMaxCapacity)
+	if s.capacity == len(s.responses) {
+		log.Panicf("Simple metrics has reached the max capacity of %d", s.capacity)
 	}
 
 	s.responses = append(s.responses, duration)
@@ -59,6 +62,7 @@ func (s *Simple) Aggregate() Result {
 	minResponse := s.responses[0]
 	maxResponse := s.responses[0]
 	totalProcessingTime := time.Duration(0)
+	// TODO: this could be optimized when calling AddResponse
 	for _, response := range s.responses {
 		if response < minResponse {
 			minResponse = response
