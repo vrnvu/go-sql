@@ -6,3 +6,7 @@ sampleSize must be greater than 0
 [TestNewReservoirWithSizeTooManySize - 1]
 sampleSize must be less than 20000
 ---
+
+[TestReservoirMetricsAggregate - 1]
+metrics.Result{NumberOfQueries:10, TotalProcessingTime:55000000000, MinResponse:1000000000, MedianResponse:6000000000, AverageResponse:5500000000, MaxResponse:10000000000}
+---
