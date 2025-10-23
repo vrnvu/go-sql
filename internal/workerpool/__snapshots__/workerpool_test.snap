@@ -6,3 +6,7 @@ number of workers must be less than the number of CPUs
 [TestNewZeroWorkers - 1]
 number of workers must be greater than 0
 ---
+
+[TestClientPingFailed - 1]
+failed to ping client
+---

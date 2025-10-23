@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/vrnvu/go-sql/internal/client"
 	"github.com/vrnvu/go-sql/internal/query"
 	"github.com/vrnvu/go-sql/internal/workerpool"
 )
@@ -62,7 +63,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	wp, err := workerpool.New(numWorkers)
+	wp, err := workerpool.New(numWorkers, client.NewTigerData())
 	if err != nil {
 		log.Fatalf("error creating worker pool: %v", err)
 	}

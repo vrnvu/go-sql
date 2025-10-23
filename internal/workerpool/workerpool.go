@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/vrnvu/go-sql/internal/client"
 	"github.com/vrnvu/go-sql/internal/metrics"
 	"github.com/vrnvu/go-sql/internal/query"
 )
@@ -39,6 +40,7 @@ type Result struct {
 // query.hostname = "host4" -> query channel 3
 // query.hostname = "host5" -> query channel 0 // idx % numWorkers
 type WorkerPool struct {
+	client              client.Client
 	workerWg            sync.WaitGroup
 	numWorkers          int
 	mapHostnameToWorker map[string]chan query.Query
@@ -49,7 +51,7 @@ type WorkerPool struct {
 }
 
 // New creates a new WorkerPool with the given number of workers
-func New(numWorkers int) (*WorkerPool, error) {
+func New(numWorkers int, client client.Client) (*WorkerPool, error) {
 	if numWorkers < 1 {
 		return nil, fmt.Errorf("number of workers must be greater than 0")
 	}
@@ -63,7 +65,12 @@ func New(numWorkers int) (*WorkerPool, error) {
 		queries[i] = make(chan query.Query)
 	}
 
+	if client.Ping() != nil {
+		return nil, fmt.Errorf("failed to ping client")
+	}
+
 	return &WorkerPool{
+		client:              client,
 		numWorkers:          numWorkers,
 		mapHostnameToWorker: make(map[string]chan query.Query),
 		lastWorkerIdx:       0,

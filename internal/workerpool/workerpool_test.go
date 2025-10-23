@@ -2,6 +2,7 @@ package workerpool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"testing"
@@ -9,9 +10,20 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
+	"github.com/vrnvu/go-sql/internal/client"
 	"github.com/vrnvu/go-sql/internal/query"
 	"pgregory.net/rapid"
 )
+
+type testClient struct{}
+
+func (t *testClient) Ping() error {
+	return errors.New("ping failed")
+}
+
+func (t *testClient) Query(query string) (*client.Response, error) {
+	return nil, nil
+}
 
 func Query(i int) (*query.Query, error) {
 	hostname := fmt.Sprintf("hostname-%d", i)
@@ -30,7 +42,7 @@ func TestNewProperties(t *testing.T) {
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")
-		wp, err := New(numWorkers)
+		wp, err := New(numWorkers, client.NewTigerData())
 		assert.NoError(t, err)
 		assert.NotNil(t, wp)
 	})
@@ -38,7 +50,7 @@ func TestNewProperties(t *testing.T) {
 
 func TestNewZeroWorkers(t *testing.T) {
 	t.Parallel()
-	wp, err := New(0)
+	wp, err := New(0, client.NewTigerData())
 	assert.Error(t, err)
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
@@ -46,15 +58,23 @@ func TestNewZeroWorkers(t *testing.T) {
 
 func TestNewTooManyWorkers(t *testing.T) {
 	t.Parallel()
-	wp, err := New(runtime.NumCPU() + 1)
+	wp, err := New(runtime.NumCPU()+1, client.NewTigerData())
 	assert.Error(t, err)
+	assert.Nil(t, wp)
+	snaps.MatchSnapshot(t, err.Error())
+}
+
+func TestClientPingFailed(t *testing.T) {
+	t.Parallel()
+
+	wp, err := New(1, &testClient{})
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
 }
 
 func TestWorkerPoolIsCancel(t *testing.T) {
 	t.Parallel()
-	wp, err := New(1)
+	wp, err := New(1, client.NewTigerData())
 	assert.NoError(t, err)
 	assert.NotNil(t, wp)
 
