@@ -71,6 +71,8 @@ Worker details:
 <img width="423" height="203" alt="Screenshot 2025-10-23 at 09 53 01" src="https://github.com/user-attachments/assets/8eee0b64-94ce-4c7c-b869-b6856c0c0cce" />
 
 - Every worker will create its own connection to TigerData, so we will have N connections.
+- Using bounded channels to simplify the CSP model, we can later profile and optimize with unbounded channels.
+    - I was thinking about N worker : 1 results chan that blocks to make it simple and correct first. Profile and optimize in a second stage.
 
 Connection:
 
