@@ -2,13 +2,29 @@ package workerpool
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
+	"github.com/vrnvu/go-sql/internal/query"
 	"pgregory.net/rapid"
 )
+
+func Query(i int) (*query.Query, error) {
+	hostname := fmt.Sprintf("hostname-%d", i)
+	startTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:00")
+	if err != nil {
+		return nil, err
+	}
+	endTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:01")
+	if err != nil {
+		return nil, err
+	}
+	return &query.Query{Hostname: hostname, StartTime: startTime, EndTime: endTime}, nil
+}
 
 func TestNewProperties(t *testing.T) {
 	t.Parallel()
@@ -73,19 +89,11 @@ func TestWorkerPoolIsCancel(t *testing.T) {
 // 		go wp.SendMetrics(ctx, done)
 
 // 		for i := range 10 {
-// 			hostname := fmt.Sprintf("hostname-%d", i)
-// 			startTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:00")
+// 			query, err := Query(i)
 // 			assert.NoError(t, err)
+// 			assert.NotNil(t, query)
 
-// 			endTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:01")
-// 			assert.NoError(t, err)
-
-// 			query := query.Query{
-// 				Hostname:  hostname,
-// 				StartTime: startTime,
-// 				EndTime:   endTime,
-// 			}
-// 			if err := wp.RunQuery(ctx, query); err != nil {
+// 			if err := wp.RunQuery(ctx, *query); err != nil {
 // 				log.Fatalf("Error running query: %v", err)
 // 			}
 // 		}
