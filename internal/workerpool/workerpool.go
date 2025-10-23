@@ -6,18 +6,13 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/vrnvu/go-sql/internal/metrics"
 	"github.com/vrnvu/go-sql/internal/query"
 )
 
 // Result is a single query result, containing the worker ID, hostname, request start time, and request end time
 type Result struct {
-	WorkerID         int
-	Hostname         string
-	RequestStartTime time.Time
-	RequestEndTime   time.Time
-	// TODO enhancements: i.e time to response first byte, response completed, etc.
-	// ResponseStartTime time.Time
-	// ResponseEndTime   time.Time
+	Duration time.Duration
 }
 
 // WorkerPool is a pool of workers that can execute queries
@@ -46,6 +41,7 @@ type WorkerPool struct {
 	map_hostname_to_worker map[string]chan query.Query
 	last_worker_idx        int
 	results                chan Result
+	simpleMetrics          *metrics.Simple
 	queries                []chan query.Query
 }
 
@@ -69,6 +65,7 @@ func New(numWorkers int) (*WorkerPool, error) {
 		map_hostname_to_worker: make(map[string]chan query.Query),
 		last_worker_idx:        0,
 		results:                make(chan Result),
+		simpleMetrics:          metrics.NewSimple(),
 		queries:                queries,
 	}, nil
 }
@@ -103,15 +100,8 @@ func runQuery(ctx context.Context, query_worker chan query.Query, query query.Qu
 	}
 }
 
-// TODO aggregate results
-// - # of queries processed,
-// - total processing time across all queries,
-// - the minimum query time (for a single query),
-// - the median query time,
-// - the average query time,
-// - and the maximum query time.
-func (wp *WorkerPool) CollectResults(ctx context.Context, done chan<- bool) {
-	num_queries := 0
+// SendMetrics sends the results from the workers to our metrics aggregator
+func (wp *WorkerPool) SendMetrics(ctx context.Context, done chan<- bool) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -119,13 +109,17 @@ func (wp *WorkerPool) CollectResults(ctx context.Context, done chan<- bool) {
 		case result, ok := <-wp.results:
 			if !ok {
 				done <- true
-				fmt.Printf("num_queries: %d\n", num_queries)
+				// TODO aggregate metrics
 				return
 			}
-			num_queries++
-			fmt.Println(result)
+			wp.simpleMetrics.AddResponse(result.Duration)
 		}
 	}
+}
+
+// AggregateMetrics aggregates the metrics from the workers
+func (wp *WorkerPool) AggregateMetrics() metrics.Result {
+	return wp.simpleMetrics.Aggregate()
 }
 
 // Close all the query channels and the results channel in order to terminate the workers
@@ -138,7 +132,6 @@ func (wp *WorkerPool) Close() {
 	close(wp.results)
 }
 
-// TODO
 func worker(ctx context.Context, id int, queries <-chan query.Query, results chan<- Result) {
 	for {
 		select {
@@ -146,13 +139,12 @@ func worker(ctx context.Context, id int, queries <-chan query.Query, results cha
 			return
 		case query := <-queries:
 			start := time.Now()
+			// TODO simulate query execution
+			fmt.Printf("worker: id-%d executing query: hostname-%s start_time-%s end_time-%s\n", id, query.Hostname, query.StartTime, query.EndTime)
 			time.Sleep(2 * time.Millisecond)
 			end := time.Now()
 			results <- Result{
-				WorkerID:         id,
-				Hostname:         query.Hostname,
-				RequestStartTime: start,
-				RequestEndTime:   end,
+				Duration: end.Sub(start),
 			}
 		}
 	}

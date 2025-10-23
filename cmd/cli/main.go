@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -63,7 +64,7 @@ func main() {
 
 	wp.RunWorkers(ctx)
 	done := make(chan bool)
-	go wp.CollectResults(ctx, done)
+	go wp.SendMetrics(ctx, done)
 
 	for {
 		select {
@@ -109,4 +110,7 @@ func main() {
 
 	wp.Close()
 	<-done
+
+	metrics := wp.AggregateMetrics()
+	fmt.Printf("metrics: %v\n", metrics)
 }
