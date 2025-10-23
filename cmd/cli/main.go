@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 
 	"github.com/vrnvu/go-sql/internal/query"
 	"github.com/vrnvu/go-sql/internal/workerpool"
@@ -32,23 +31,6 @@ func main() {
 		}
 		defer file.Close()
 		reader = csv.NewReader(file)
-	}
-
-	numCores := runtime.NumCPU()
-	if numWorkers < 1 || numCores < numWorkers {
-		flag.Usage()
-		log.Fatalf("number of workers must be greater than 0 and less than the number of cores: %d", numCores)
-	}
-
-	fields, err := reader.Read()
-	if err != nil {
-		log.Fatalf("error reading fields: %v", err)
-	}
-	if len(fields) != 3 {
-		log.Fatalf("expected 3 fields, got %d", len(fields))
-	}
-	if fields[0] != "hostname" || fields[1] != "start_time" || fields[2] != "end_time" {
-		log.Fatalf("expected fields to be hostname, start_time, end_time, got %v", fields)
 	}
 
 	// TODO Since this is IO bound to Network, I'd consider a timeout
