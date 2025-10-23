@@ -5,11 +5,9 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/vrnvu/go-sql/internal/query"
 	"github.com/vrnvu/go-sql/internal/workerpool"
@@ -66,6 +64,7 @@ func main() {
 	done := make(chan bool)
 	go wp.SendMetrics(ctx, done)
 
+	queryReader := query.NewReader(reader)
 	for {
 		select {
 		case <-ctx.Done():
@@ -73,35 +72,18 @@ func main() {
 		default:
 		}
 
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
+		query, hasMore, err := queryReader.Next()
 		if err != nil {
-			log.Fatalf("error reading input CSV: %v", err)
+			log.Fatalf("Error reading query: %v", err)
+		}
+		if !hasMore {
+			break // Finished reading
 		}
 
-		hostname := record[0]
 		// TODO test context cancellation
-		// if hostname == "host_000002" {
+		// if query.Hostname == "host_000002" {
 		// 	cancel()
 		// }
-
-		startTime, err := time.Parse(time.DateTime, record[1])
-		if err != nil {
-			log.Fatalf("error parsing start time: %v", err)
-		}
-		endTime, err := time.Parse(time.DateTime, record[2])
-		if err != nil {
-			log.Fatalf("error parsing end time: %v", err)
-		}
-
-		// TODO sync.Pool?
-		query := query.Query{
-			Hostname:  hostname,
-			StartTime: startTime,
-			EndTime:   endTime,
-		}
 
 		if err := wp.RunQuery(ctx, query); err != nil {
 			log.Fatalf("Error running query: %v", err)

@@ -109,7 +109,6 @@ func (wp *WorkerPool) SendMetrics(ctx context.Context, done chan<- bool) {
 		case result, ok := <-wp.results:
 			if !ok {
 				done <- true
-				// TODO aggregate metrics
 				return
 			}
 			wp.simpleMetrics.AddResponse(result.Duration)
