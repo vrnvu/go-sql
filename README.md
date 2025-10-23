@@ -84,6 +84,28 @@ Connection:
 - After that we can start our benchmark, a simple design given 1 worker = 1 connection is to just send the queries sequentially and mesure timings.
 - Collecting results is aggregating all our data t0, t1, ... tN, for every queryN.
 
+## Metrics aggregation design
+
+
+The module/functionality for metrics aggregation.
+
+There are multiple possible implementations depending on our resource limits.
+
+- Keeping a list of durations in a buffer of memory and compute everything at the end (doesn't scale).
+- Sampling, we need to define an upper bound of max samples.
+- Histograms, like wrk, we define buckets and assume a margin of error in median.
+
+Min, max:
+- Both of them can be simply tracked with a variable
+
+For avg and median:
+- Depends on metrics design
+- avg = (avg * count * newDuration) / (count + 1)
+    - Confirm if this math *always* 
+- median, depends on our aggregation approach and what % of error is acceptable
+    - T-digest algorithm
+    - P^2 algorithm
+
 ------
 
 Additional first thoughts, notes and details:
