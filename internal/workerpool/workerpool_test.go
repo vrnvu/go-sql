@@ -103,8 +103,8 @@ func TestWorkerPoolIsCancel(t *testing.T) {
 	}
 }
 
-// TODO: we can prove our workerpool is deterministic in the number of workers
-// But first we need to do DI in our worker dependencies
+// This is a cool property test (imo)
+// We can prove our workerpool is deterministic in the number of workers
 func TestSnapshot(t *testing.T) {
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
