@@ -105,6 +105,8 @@ For avg and median:
 - median, depends on our aggregation approach and what % of error is acceptable
     - T-digest algorithm
     - P^2 algorithm
+ 
+What we can notice this can be fully implemented and tested as a separete module and injected to our worker pool later.
 
 ------
 
