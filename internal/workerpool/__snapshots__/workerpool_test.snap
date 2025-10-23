@@ -1,0 +1,8 @@
+
+[TestNewZeroWorkers - 1]
+number of workers must be greater than 0
+---
+
+[TestNewTooManyWorkers - 1]
+number of workers must be less than the number of CPUs
+---

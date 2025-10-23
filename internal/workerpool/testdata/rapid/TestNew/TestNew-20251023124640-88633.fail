@@ -1,0 +1,27 @@
+# 2025/10/23 12:46:40.073181 [TestNew] [rapid] draw numWorkers: 0
+# 2025/10/23 12:46:40.073228 [TestNew] 
+# 	Error Trace:	/Users/arnau/Documents/dev/c09d0e45-1776-4aa9-b800-ef2309328ce0/internal/workerpool/workerpool_test.go:15
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/arnau/Documents/dev/c09d0e45-1776-4aa9-b800-ef2309328ce0/internal/workerpool/workerpool_test.go:12
+# 	            				/opt/homebrew/Cellar/go/1.25.3/libexec/src/runtime/asm_arm64.s:1268
+# 	Error:      	Received unexpected error:
+# 	            	number of workers must be greater than 0
+# 	Test:       	TestNew
+# 2025/10/23 12:46:40.073265 [TestNew] 
+# 	Error Trace:	/Users/arnau/Documents/dev/c09d0e45-1776-4aa9-b800-ef2309328ce0/internal/workerpool/workerpool_test.go:16
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/arnau/Documents/dev/c09d0e45-1776-4aa9-b800-ef2309328ce0/internal/workerpool/workerpool_test.go:12
+# 	            				/opt/homebrew/Cellar/go/1.25.3/libexec/src/runtime/asm_arm64.s:1268
+# 	Error:      	Expected value not to be nil.
+# 	Test:       	TestNew
+# 
+v0.4.8#989899365671115786
+0x1e835c01680a74
+0x65f68780c6397
+0x0
