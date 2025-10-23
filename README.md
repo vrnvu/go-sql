@@ -73,6 +73,7 @@ Worker details:
 - Every worker will create its own connection to TigerData, so we will have N connections.
 - Using bounded channels to simplify the CSP model, we can later profile and optimize with unbounded channels.
     - I was thinking about N worker : 1 results chan that blocks to make it simple and correct first. Profile and optimize in a second stage.
+- Context timeout, I think makes sense. Consider failed request after Timeout, cancel HTTP request, process next query. 
 
 Connection:
 
