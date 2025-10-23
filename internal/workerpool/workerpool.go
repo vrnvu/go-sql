@@ -84,7 +84,7 @@ func New(numWorkers int, client client.Client) (*WorkerPool, error) {
 func (wp *WorkerPool) RunWorkers(ctx context.Context) {
 	wp.workerWg.Add(wp.numWorkers)
 	for i := 0; i < wp.numWorkers; i++ {
-		go worker(ctx, i, wp.queries[wp.lastWorkerIdx], wp.results, &wp.workerWg)
+		go worker(ctx, i, &wp.workerWg, wp.client, wp.queries[wp.lastWorkerIdx], wp.results)
 		wp.lastWorkerIdx = (wp.lastWorkerIdx + 1) % wp.numWorkers
 	}
 }
@@ -147,7 +147,7 @@ func (wp *WorkerPool) Close() {
 	close(wp.results)
 }
 
-func worker(ctx context.Context, id int, queries <-chan query.Query, results chan<- Result, wg *sync.WaitGroup) {
+func worker(ctx context.Context, id int, wg *sync.WaitGroup, client client.Client, queries <-chan query.Query, results chan<- Result) {
 	defer wg.Done()
 	for {
 		select {
@@ -157,14 +157,15 @@ func worker(ctx context.Context, id int, queries <-chan query.Query, results cha
 			if !ok {
 				return
 			}
-			start := time.Now()
-			// TODO simulate query execution
-			fmt.Printf("worker: id-%d executing query: hostname-%s start_time-%s end_time-%s\n", id, query.Hostname, query.StartTime, query.EndTime)
-			time.Sleep(2 * time.Millisecond)
-			end := time.Now()
+			response, err := client.Query(query.Build())
+			if err != nil {
+				// TODO: handle error
+				log.Panicf("worker: id-%d error executing query: hostname-%s start_time-%s end_time-%s error-%v\n", id, query.Hostname, query.StartTime, query.EndTime, err)
+				return
+			}
 
 			select {
-			case results <- Result{Duration: end.Sub(start)}:
+			case results <- Result{Duration: response.Duration}:
 			case <-ctx.Done():
 				log.Panicf("worker: id-%d context cancelled, not sending result\n", id)
 				return

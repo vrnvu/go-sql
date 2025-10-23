@@ -1,0 +1,29 @@
+# 2025/10/23 18:39:43.156946 [TestSnapshot] [rapid] draw numWorkers: 1
+# 2025/10/23 18:39:43.157265 [TestSnapshot] 
+# [38;5;52m[48;5;225m- Snapshot - 5[0m
+# [38;5;22m[48;5;159m+ Received + 5[0m
+# 
+# [33;1m@@ -4,9 +4,9 @@[0m
+# 
+#   [2mPerformance Metrics
+# [0m  [2m=====================
+# [0m  [2mQueries Processed: 10
+# [0m[38;5;52m[48;5;225m- Total Time: 10s[0m
+# [38;5;52m[48;5;225m- Min Response: 1s[0m
+# [38;5;52m[48;5;225m- Median Response: 1s[0m
+# [38;5;52m[48;5;225m- Average Response: 1s[0m
+# [38;5;52m[48;5;225m- Max Response: 1s[0m
+# [38;5;22m[48;5;159m+ Total Time: 20s[0m
+# [38;5;22m[48;5;159m+ Min Response: 2s[0m
+# [38;5;22m[48;5;159m+ Median Response: 2s[0m
+# [38;5;22m[48;5;159m+ Average Response: 2s[0m
+# [38;5;22m[48;5;159m+ Max Response: 2s[0m
+#   [2m↵
+# [0m
+# [2mat __snapshots__/workerpool_test.snap:14
+# [0m
+# 
+v0.4.8#13405516675972491199
+0x0
+0x0
+0x0

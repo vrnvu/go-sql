@@ -10,3 +10,18 @@ number of workers must be greater than 0
 [TestClientPingFailed - 1]
 failed to ping client
 ---
+
+[TestSnapshot - 1]
+
+
+=====================
+Performance Metrics
+=====================
+Queries Processed: 10
+Total Time: 10s
+Min Response: 1s
+Median Response: 1s
+Average Response: 1s
+Max Response: 1s
+
+---

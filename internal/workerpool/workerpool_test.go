@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"runtime"
 	"testing"
 	"time"
@@ -15,14 +16,24 @@ import (
 	"pgregory.net/rapid"
 )
 
-type testClient struct{}
+type testFailedPingClient struct{}
 
-func (t *testClient) Ping() error {
+func (t *testFailedPingClient) Ping() error {
 	return errors.New("ping failed")
 }
 
-func (t *testClient) Query(query string) (*client.Response, error) {
+func (t *testFailedPingClient) Query(query string) (*client.Response, error) {
 	return nil, nil
+}
+
+type testDeterministicClient struct{}
+
+func (t *testDeterministicClient) Ping() error {
+	return nil
+}
+
+func (t *testDeterministicClient) Query(query string) (*client.Response, error) {
+	return &client.Response{Duration: time.Duration(1 * time.Second)}, nil
 }
 
 func Query(i int) (*query.Query, error) {
@@ -42,7 +53,7 @@ func TestNewProperties(t *testing.T) {
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")
-		wp, err := New(numWorkers, client.NewTigerData())
+		wp, err := New(numWorkers, &testDeterministicClient{})
 		assert.NoError(t, err)
 		assert.NotNil(t, wp)
 	})
@@ -50,7 +61,7 @@ func TestNewProperties(t *testing.T) {
 
 func TestNewZeroWorkers(t *testing.T) {
 	t.Parallel()
-	wp, err := New(0, client.NewTigerData())
+	wp, err := New(0, &testDeterministicClient{})
 	assert.Error(t, err)
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
@@ -58,7 +69,7 @@ func TestNewZeroWorkers(t *testing.T) {
 
 func TestNewTooManyWorkers(t *testing.T) {
 	t.Parallel()
-	wp, err := New(runtime.NumCPU()+1, client.NewTigerData())
+	wp, err := New(runtime.NumCPU()+1, &testDeterministicClient{})
 	assert.Error(t, err)
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
@@ -67,14 +78,14 @@ func TestNewTooManyWorkers(t *testing.T) {
 func TestClientPingFailed(t *testing.T) {
 	t.Parallel()
 
-	wp, err := New(1, &testClient{})
+	wp, err := New(1, &testFailedPingClient{})
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
 }
 
 func TestWorkerPoolIsCancel(t *testing.T) {
 	t.Parallel()
-	wp, err := New(1, client.NewTigerData())
+	wp, err := New(1, &testDeterministicClient{})
 	assert.NoError(t, err)
 	assert.NotNil(t, wp)
 
@@ -94,39 +105,34 @@ func TestWorkerPoolIsCancel(t *testing.T) {
 
 // TODO: we can prove our workerpool is deterministic in the number of workers
 // But first we need to do DI in our worker dependencies
-// func TestSnapshot(t *testing.T) {
-// 	t.Parallel()
-// 	rapid.Check(t, func(t *rapid.T) {
-// 		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")
-// 		wp, err := New(numWorkers)
-// 		assert.NoError(t, err)
-// 		assert.NotNil(t, wp)
+func TestSnapshot(t *testing.T) {
+	t.Parallel()
+	rapid.Check(t, func(t *rapid.T) {
+		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")
+		wp, err := New(numWorkers, &testDeterministicClient{})
+		assert.NoError(t, err)
+		assert.NotNil(t, wp)
 
-// 		ctx := t.Context()
-// 		done := make(chan bool)
+		ctx := t.Context()
+		done := make(chan bool)
 
-// 		wp.RunWorkers(ctx)
-// 		go wp.SendMetrics(ctx, done)
+		wp.RunWorkers(ctx)
+		go wp.SendMetrics(ctx, done)
 
-// 		for i := range 10 {
-// 			query, err := Query(i)
-// 			assert.NoError(t, err)
-// 			assert.NotNil(t, query)
+		for i := range 10 {
+			query, err := Query(i)
+			assert.NoError(t, err)
+			assert.NotNil(t, query)
 
-// 			if err := wp.RunQuery(ctx, *query); err != nil {
-// 				log.Fatalf("Error running query: %v", err)
-// 			}
-// 		}
+			if err := wp.RunQuery(ctx, *query); err != nil {
+				log.Fatalf("Error running query: %v", err)
+			}
+		}
 
-// 		wp.Close()
-// 		<-done
+		wp.Close()
+		<-done
 
-// 		metrics := wp.AggregateMetrics()
-// 		snaps.MatchSnapshot(t, metrics.AverageResponse.Round(time.Millisecond))
-// 		snaps.MatchSnapshot(t, metrics.MaxResponse.Round(time.Millisecond))
-// 		snaps.MatchSnapshot(t, metrics.MedianResponse.Round(time.Millisecond))
-// 		snaps.MatchSnapshot(t, metrics.MinResponse.Round(time.Millisecond))
-// 		snaps.MatchSnapshot(t, metrics.NumberOfQueries)
-// 		snaps.MatchSnapshot(t, metrics.TotalProcessingTime.Round(time.Millisecond))
-// 	})
-// }
+		metrics := wp.AggregateMetrics()
+		snaps.MatchSnapshot(t, metrics.Table())
+	})
+}
