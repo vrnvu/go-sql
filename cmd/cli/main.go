@@ -94,5 +94,5 @@ func main() {
 	<-done
 
 	metrics := wp.AggregateMetrics()
-	fmt.Printf("metrics: %v\n", metrics)
+	fmt.Printf("metrics: %v\n", metrics.Table())
 }
