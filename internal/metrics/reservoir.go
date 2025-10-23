@@ -67,6 +67,7 @@ func (r *Reservoir) AddResponse(duration time.Duration) {
 		// Simple panics.
 		// Reservoir samples randomly and replaces the old value with the new one.
 		// TODO: We can make it deterministic by using a seed, and have deterministic tests
+		//nolint:gosec
 		j := rand.Intn(r.numberOfQueries)
 		if j < r.sampleSize {
 			r.responses[j] = duration

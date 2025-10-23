@@ -9,6 +9,7 @@ import (
 )
 
 func TestCompareSimpleAndReservoirWhenInSampleSize(t *testing.T) {
+	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		// Since we are in the sample size, we expect the results to be the same
 		sampleSize := rapid.IntRange(1, SimpleMaxCapacity).Draw(t, "sampleSize")
@@ -22,8 +23,8 @@ func TestCompareSimpleAndReservoirWhenInSampleSize(t *testing.T) {
 		assert.NoError(t, err)
 
 		for range sampleSize {
-			simpleMetrics.AddResponse(time.Duration(1 * time.Second))
-			reservoirMetrics.AddResponse(time.Duration(1 * time.Second))
+			simpleMetrics.AddResponse(1 * time.Second)
+			reservoirMetrics.AddResponse(1 * time.Second)
 		}
 
 		assert.Equal(t, simpleMetrics.Aggregate(), reservoirMetrics.Aggregate())
@@ -32,6 +33,7 @@ func TestCompareSimpleAndReservoirWhenInSampleSize(t *testing.T) {
 
 // This test can be used to generate snapshots and smoke tests
 func TestCompareSimpleAndReservoirWhenSampleSizeIsGreaterThanReservoirSampleSize(t *testing.T) {
+	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		// We start at a number big enough so we trigger the sampling algorithm
 		capacity := rapid.IntRange(10_000, SimpleMaxCapacity).Draw(t, "capacity")

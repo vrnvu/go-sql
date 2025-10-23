@@ -1,0 +1,54 @@
+version: "2"
+run:
+  build-tags:
+    - all
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+linters:
+  enable:
+    - asciicheck
+    - bodyclose
+    - dogsled
+    - errorlint
+    - goheader
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - makezero
+    - misspell
+    - noctx
+    - paralleltest
+    - prealloc
+    - predeclared
+    - revive
+    - sqlclosecheck
+    - staticcheck
+    - unconvert
+    - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+severity:
+  default: error
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

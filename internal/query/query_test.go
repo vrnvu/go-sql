@@ -9,6 +9,7 @@ import (
 )
 
 func TestQuerySnapshot(t *testing.T) {
+	t.Parallel()
 	startTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:00")
 	assert.NoError(t, err)
 	endTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:01")

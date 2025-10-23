@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -29,7 +30,7 @@ func NewReader(csvReader *csv.Reader) *Reader {
 func (r *Reader) Next() (Query, bool, error) {
 	record, err := r.csvReader.Read()
 	if err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return Query{}, false, nil
 		}
 		return Query{}, false, err
@@ -41,12 +42,12 @@ func (r *Reader) Next() (Query, bool, error) {
 
 	startTime, err := time.Parse("2006-01-02 15:04:05", record[1])
 	if err != nil {
-		return Query{}, false, fmt.Errorf("invalid start_time format: %v", err)
+		return Query{}, false, fmt.Errorf("invalid start_time format: %w", err)
 	}
 
 	endTime, err := time.Parse("2006-01-02 15:04:05", record[2])
 	if err != nil {
-		return Query{}, false, fmt.Errorf("invalid end_time format: %v", err)
+		return Query{}, false, fmt.Errorf("invalid end_time format: %w", err)
 	}
 
 	query := Query{

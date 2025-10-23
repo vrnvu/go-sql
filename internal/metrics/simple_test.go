@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewSimpleWithCapacityProperties(t *testing.T) {
+	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		capacity := rapid.IntRange(1, SimpleMaxCapacity).Draw(t, "capacity")
 		metrics, err := NewSimpleWithCapacity(capacity)
@@ -21,6 +22,7 @@ func TestNewSimpleWithCapacityProperties(t *testing.T) {
 }
 
 func TestNewSimpleWithCapacityZeroCapacity(t *testing.T) {
+	t.Parallel()
 	metrics, err := NewSimpleWithCapacity(0)
 	assert.Error(t, err)
 	assert.Nil(t, metrics)
@@ -28,6 +30,7 @@ func TestNewSimpleWithCapacityZeroCapacity(t *testing.T) {
 }
 
 func TestNewSimpleWithCapacityTooManyCapacity(t *testing.T) {
+	t.Parallel()
 	metrics, err := NewSimpleWithCapacity(SimpleMaxCapacity + 1)
 	assert.Error(t, err)
 	assert.Nil(t, metrics)
@@ -35,6 +38,7 @@ func TestNewSimpleWithCapacityTooManyCapacity(t *testing.T) {
 }
 
 func TestSimpleAddResponsePanicsWhenMaxCapacityIsReached(t *testing.T) {
+	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		capacity := rapid.IntRange(1, SimpleMaxCapacity).Draw(t, "capacity")
 		metrics, err := NewSimpleWithCapacity(capacity)
@@ -52,6 +56,7 @@ func TestSimpleAddResponsePanicsWhenMaxCapacityIsReached(t *testing.T) {
 }
 
 func TestSimpleMetricsAggregate(t *testing.T) {
+	t.Parallel()
 	metrics := NewSimple()
 	metrics.AddResponse(1 * time.Second)
 	metrics.AddResponse(2 * time.Second)

@@ -3,7 +3,9 @@ package workerpool
 import (
 	"context"
 	"fmt"
+	"log"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/vrnvu/go-sql/internal/metrics"
@@ -37,12 +39,13 @@ type Result struct {
 // query.hostname = "host4" -> query channel 3
 // query.hostname = "host5" -> query channel 0 // idx % numWorkers
 type WorkerPool struct {
-	numWorkers             int
-	map_hostname_to_worker map[string]chan query.Query
-	last_worker_idx        int
-	results                chan Result
-	simpleMetrics          *metrics.Simple
-	queries                []chan query.Query
+	workerWg            sync.WaitGroup
+	numWorkers          int
+	mapHostnameToWorker map[string]chan query.Query
+	lastWorkerIdx       int
+	results             chan Result
+	queries             []chan query.Query
+	simpleMetrics       *metrics.Simple
 }
 
 // New creates a new WorkerPool with the given number of workers
@@ -61,41 +64,42 @@ func New(numWorkers int) (*WorkerPool, error) {
 	}
 
 	return &WorkerPool{
-		numWorkers:             numWorkers,
-		map_hostname_to_worker: make(map[string]chan query.Query),
-		last_worker_idx:        0,
-		results:                make(chan Result),
-		simpleMetrics:          metrics.NewSimple(),
-		queries:                queries,
+		numWorkers:          numWorkers,
+		mapHostnameToWorker: make(map[string]chan query.Query),
+		lastWorkerIdx:       0,
+		results:             make(chan Result),
+		simpleMetrics:       metrics.NewSimple(),
+		queries:             queries,
 	}, nil
 }
 
 // RunWorkers starts the workers in the WorkerPool
 func (wp *WorkerPool) RunWorkers(ctx context.Context) {
+	wp.workerWg.Add(wp.numWorkers)
 	for i := 0; i < wp.numWorkers; i++ {
-		go worker(ctx, i, wp.queries[wp.last_worker_idx], wp.results)
-		wp.last_worker_idx = (wp.last_worker_idx + 1) % wp.numWorkers
+		go worker(ctx, i, wp.queries[wp.lastWorkerIdx], wp.results, &wp.workerWg)
+		wp.lastWorkerIdx = (wp.lastWorkerIdx + 1) % wp.numWorkers
 	}
 }
 
 // RunQuery allocates a worker to run a query on the WorkerPool
-// Thread safety: `last_worker_idx` is not thread safe
+// Thread safety: `lastWorkerIdx` is not thread safe
 func (wp *WorkerPool) RunQuery(ctx context.Context, query query.Query) error {
-	if query_worker, ok := wp.map_hostname_to_worker[query.Hostname]; ok {
-		return runQuery(ctx, query_worker, query)
+	if queryWorker, ok := wp.mapHostnameToWorker[query.Hostname]; ok {
+		return runQuery(ctx, queryWorker, query)
 	}
 
-	query_worker := wp.queries[wp.last_worker_idx]
-	wp.last_worker_idx = (wp.last_worker_idx + 1) % wp.numWorkers
-	wp.map_hostname_to_worker[query.Hostname] = query_worker
-	return runQuery(ctx, query_worker, query)
+	queryWorker := wp.queries[wp.lastWorkerIdx]
+	wp.lastWorkerIdx = (wp.lastWorkerIdx + 1) % wp.numWorkers
+	wp.mapHostnameToWorker[query.Hostname] = queryWorker
+	return runQuery(ctx, queryWorker, query)
 }
 
-func runQuery(ctx context.Context, query_worker chan query.Query, query query.Query) error {
+func runQuery(ctx context.Context, queryWorker chan query.Query, query query.Query) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case query_worker <- query:
+	case queryWorker <- query:
 		return nil
 	}
 }
@@ -122,28 +126,41 @@ func (wp *WorkerPool) AggregateMetrics() metrics.Result {
 }
 
 // Close all the query channels and the results channel in order to terminate the workers
-// Thread safety: all the channels are closed in a single goroutine, so there is no race condition
+// Thread safety: waits for all workers to finish before closing channels
 func (wp *WorkerPool) Close() {
-	for _, query_worker := range wp.queries {
-		close(query_worker)
+	// Close query channels to signal workers to stop
+	for _, queryWorker := range wp.queries {
+		close(queryWorker)
 	}
 
+	// Wait for all workers to finish
+	wp.workerWg.Wait()
+
+	// Now it's safe to close the results channel
 	close(wp.results)
 }
 
-func worker(ctx context.Context, id int, queries <-chan query.Query, results chan<- Result) {
+func worker(ctx context.Context, id int, queries <-chan query.Query, results chan<- Result, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case query := <-queries:
+		case query, ok := <-queries:
+			if !ok {
+				return
+			}
 			start := time.Now()
 			// TODO simulate query execution
 			fmt.Printf("worker: id-%d executing query: hostname-%s start_time-%s end_time-%s\n", id, query.Hostname, query.StartTime, query.EndTime)
 			time.Sleep(2 * time.Millisecond)
 			end := time.Now()
-			results <- Result{
-				Duration: end.Sub(start),
+
+			select {
+			case results <- Result{Duration: end.Sub(start)}:
+			case <-ctx.Done():
+				log.Panicf("worker: id-%d context cancelled, not sending result\n", id)
+				return
 			}
 		}
 	}
