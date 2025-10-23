@@ -22,7 +22,7 @@ func main() {
 
 	flag.StringVar(&inputPath, "input", "", "Path to input CSV (defaults to stdin)")
 	flag.IntVar(&numWorkers, "workers", 0, "Number of workers to use (defaults to number of cores)")
-	flag.IntVar(&timeoutSeconds, "timeout", 0, "Timeout in seconds (defaults to no timeout)")
+	flag.IntVar(&timeoutSeconds, "timeout", 600, "Timeout in seconds (defaults to 600 seconds)")
 	flag.Parse()
 
 	var reader *csv.Reader
