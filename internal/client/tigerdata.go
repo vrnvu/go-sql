@@ -7,6 +7,7 @@ func NewTigerData() *TigerData {
 	return &TigerData{}
 }
 
+// TODO probably we can simplify the interface and ping and smoke test in the constructor
 func (t *TigerData) Ping() error {
 	return nil
 }
