@@ -20,14 +20,14 @@ type Query struct {
 	EndTime   time.Time `csv:"end_time"`
 }
 
-// Reader is a simple iterator for reading CSV queries
-type QueryReader struct {
+// CSVReader is a simple iterator for reading CSV queries
+type CSVReader struct {
 	csvReader *csv.Reader
 	line      int
 }
 
 // NewReader creates a new query reader and validates the headers
-func NewQueryReader(csvReader *csv.Reader) (*QueryReader, error) {
+func NewQueryReader(csvReader *csv.Reader) (*CSVReader, error) {
 	fields, err := csvReader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("error reading headers: %w", err)
@@ -39,13 +39,13 @@ func NewQueryReader(csvReader *csv.Reader) (*QueryReader, error) {
 		return nil, fmt.Errorf("expected fields to be hostname, start_time, end_time, got %v", fields)
 	}
 
-	return &QueryReader{csvReader: csvReader, line: 2}, nil
+	return &CSVReader{csvReader: csvReader, line: 2}, nil
 }
 
 // Next reads the next query from the CSV
 // Returns the query and a boolean indicating if there are more queries
 // Skips errors when reading invalid rows
-func (r *QueryReader) Next() (Query, bool, error) {
+func (r *CSVReader) Next() (Query, bool, error) {
 	defer func() {
 		r.line++
 	}()
@@ -62,7 +62,7 @@ func (r *QueryReader) Next() (Query, bool, error) {
 		return Query{}, true, fmt.Errorf("invalid CSV record: expected 3 fields, got %d on line %d", len(record), r.line)
 	}
 
-	//TODO: we are not validating hostname format
+	// TODO: we are not validating hostname format
 
 	startTime, err := time.Parse("2006-01-02 15:04:05", record[1])
 	if err != nil {

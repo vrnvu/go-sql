@@ -47,7 +47,7 @@ func (t *testFailedPingClient) Ping() error {
 	return errors.New("ping failed")
 }
 
-func (t *testFailedPingClient) Query(query string) (*client.Response, error) {
+func (t *testFailedPingClient) Query(_ string) (*client.Response, error) {
 	// Random sleep so propety testing is more useful
 	// TODO: missing a seed here to have DST(deterministic simulation testing)
 	randomSleep := rand.Intn(10) //nolint:gosec
@@ -61,8 +61,8 @@ func (t *testDeterministicClient) Ping() error {
 	return nil
 }
 
-func (t *testDeterministicClient) Query(query string) (*client.Response, error) {
-	return &client.Response{Duration: time.Duration(1 * time.Second)}, nil
+func (t *testDeterministicClient) Query(_ string) (*client.Response, error) {
+	return &client.Response{Duration: 1 * time.Second}, nil
 }
 
 func testQuery(i int) (*query.Query, error) {

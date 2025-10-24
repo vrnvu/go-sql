@@ -14,7 +14,7 @@ func TestNewReservoir(t *testing.T) {
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		sampleSize := rapid.IntRange(1, ReservoirDefaultSampleSize).Draw(t, "sampleSize")
-		metrics, err := NewReservoirWithSize(sampleSize, func(n int) int {
+		metrics, err := NewReservoirWithSize(sampleSize, func(_ int) int {
 			return 0
 		})
 		assert.NoError(t, err)
@@ -24,7 +24,7 @@ func TestNewReservoir(t *testing.T) {
 
 func TestNewReservoirWithSizeZeroSize(t *testing.T) {
 	t.Parallel()
-	metrics, err := NewReservoirWithSize(0, func(n int) int {
+	metrics, err := NewReservoirWithSize(0, func(_ int) int {
 		return 0
 	})
 	assert.Error(t, err)
@@ -34,7 +34,7 @@ func TestNewReservoirWithSizeZeroSize(t *testing.T) {
 
 func TestNewReservoirWithSizeTooManySize(t *testing.T) {
 	t.Parallel()
-	metrics, err := NewReservoirWithSize(ReservoirMaxCapacity+1, func(n int) int {
+	metrics, err := NewReservoirWithSize(ReservoirMaxCapacity+1, func(_ int) int {
 		return 0
 	})
 	assert.Error(t, err)
@@ -49,7 +49,7 @@ func TestReservoirAddResponseDoesNotPanicWhenMaxCapacityIsReached(t *testing.T) 
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		capacity := rapid.IntRange(1, ReservoirMaxCapacity).Draw(t, "capacity")
-		metrics, err := NewReservoirWithSize(capacity, func(n int) int {
+		metrics, err := NewReservoirWithSize(capacity, func(_ int) int {
 			return 0
 		})
 		assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestReservoirAddResponseDoesNotPanicWhenMaxCapacityIsReached(t *testing.T) 
 
 func TestReservoirMetricsAggregate(t *testing.T) {
 	t.Parallel()
-	metrics := NewReservoir(func(n int) int {
+	metrics := NewReservoir(func(_ int) int {
 		return 0
 	})
 
@@ -94,7 +94,7 @@ func TestReservoirMetricsAggregate(t *testing.T) {
 
 func TestReservoirAddSkippedAndFailedToMaxThenOverflow(t *testing.T) {
 	t.Parallel()
-	metrics := NewReservoir(func(n int) int {
+	metrics := NewReservoir(func(_ int) int {
 		return 0
 	})
 	metrics.skippedQueries = math.MaxInt64
