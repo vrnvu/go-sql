@@ -4,7 +4,7 @@ setup:
 	go mod download
 	go mod verify
 	@echo "Installing golangci-lint..."
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.55.2
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.5.0
 
 run:
 	go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 4 -timeout 10
