@@ -56,7 +56,7 @@ func TestQueryInvalidHeaderSnapshot(t *testing.T) {
 	defer inputFile.Close()
 
 	reader := csv.NewReader(inputFile)
-	queryReader, err := NewReader(reader)
+	queryReader, err := NewQueryReader(reader)
 	assert.Error(t, err)
 	assert.Nil(t, queryReader)
 	snaps.MatchSnapshot(t, err.Error())
@@ -70,7 +70,7 @@ func TestQueryInvalidRowSnapshot(t *testing.T) {
 
 	// line 1: valid headers
 	reader := csv.NewReader(inputFile)
-	queryReader, err := NewReader(reader)
+	queryReader, err := NewQueryReader(reader)
 	assert.NoError(t, err)
 	assert.NotNil(t, queryReader)
 

@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+// Reader is a simple iterator for reading queries
+type Reader interface {
+	Next() (Query, bool, error)
+}
+
 // Query is a row from the input CSV file, representing a single query to be executed
 type Query struct {
 	Hostname  string    `csv:"hostname"`
@@ -16,13 +21,13 @@ type Query struct {
 }
 
 // Reader is a simple iterator for reading CSV queries
-type Reader struct {
+type QueryReader struct {
 	csvReader *csv.Reader
 	line      int
 }
 
 // NewReader creates a new query reader and validates the headers
-func NewReader(csvReader *csv.Reader) (*Reader, error) {
+func NewQueryReader(csvReader *csv.Reader) (*QueryReader, error) {
 	fields, err := csvReader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("error reading headers: %w", err)
@@ -34,13 +39,13 @@ func NewReader(csvReader *csv.Reader) (*Reader, error) {
 		return nil, fmt.Errorf("expected fields to be hostname, start_time, end_time, got %v", fields)
 	}
 
-	return &Reader{csvReader: csvReader, line: 2}, nil
+	return &QueryReader{csvReader: csvReader, line: 2}, nil
 }
 
 // Next reads the next query from the CSV
 // Returns the query and a boolean indicating if there are more queries
 // Skips errors when reading invalid rows
-func (r *Reader) Next() (Query, bool, error) {
+func (r *QueryReader) Next() (Query, bool, error) {
 	defer func() {
 		r.line++
 	}()

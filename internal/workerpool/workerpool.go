@@ -13,11 +13,15 @@ import (
 )
 
 const (
+	// MaxWorkers is the maximum number of parallel workers querying TigerData
 	MaxWorkers = 1024
 )
 
 // Result is a single query result, containing the worker ID, hostname, request start time, and request end time
+// Note: Simple representation, state can be Skipped, Failed or Successful(duration)
 type Result struct {
+	skipped  bool
+	failed   bool
 	Duration time.Duration
 }
 
@@ -43,18 +47,22 @@ type Result struct {
 // query.hostname = "host4" -> query channel 3
 // query.hostname = "host5" -> query channel 0 // idx % numWorkers
 type WorkerPool struct {
-	client              client.Client
-	workerWg            sync.WaitGroup
-	numWorkers          int
+	client client.Client
+
+	queryReader         query.Reader
+	queries             []chan query.Query
+	results             chan Result
 	mapHostnameToWorker map[string]chan query.Query
 	lastWorkerIdx       int
-	results             chan Result
-	queries             []chan query.Query
-	simpleMetrics       *metrics.Simple
+	numWorkers          int
+	wgWorkers           sync.WaitGroup
+
+	wgMetrics     sync.WaitGroup
+	simpleMetrics *metrics.Simple
 }
 
 // New creates a new WorkerPool with the given number of workers
-func New(numWorkers int, client client.Client) (*WorkerPool, error) {
+func New(numWorkers int, client client.Client, queryReader query.Reader) (*WorkerPool, error) {
 	if numWorkers < 1 {
 		return nil, fmt.Errorf("number of workers must be greater than 0")
 	}
@@ -68,90 +76,106 @@ func New(numWorkers int, client client.Client) (*WorkerPool, error) {
 		queries[i] = make(chan query.Query)
 	}
 
+	// TODO probably we can simplify the interface and ping and smoke test in the constructor
 	if client.Ping() != nil {
 		return nil, fmt.Errorf("failed to ping client")
 	}
 
 	return &WorkerPool{
+		queryReader:         queryReader,
 		client:              client,
-		numWorkers:          numWorkers,
-		mapHostnameToWorker: make(map[string]chan query.Query),
-		lastWorkerIdx:       0,
-		results:             make(chan Result),
 		simpleMetrics:       metrics.NewSimple(),
 		queries:             queries,
+		results:             make(chan Result),
+		mapHostnameToWorker: make(map[string]chan query.Query),
+		numWorkers:          numWorkers,
 	}, nil
 }
 
-// RunWorkers starts the workers in the WorkerPool
-func (wp *WorkerPool) RunWorkers(ctx context.Context) {
-	wp.workerWg.Add(wp.numWorkers)
+// Run reads queries from the query reader and distributes them to the workers
+// It collects metrics from the results channel and returns the aggregated metrics
+// Returns error in panics and context cancellation
+// 1. it starts all the workers (numWorkers) and the metrics collector (1)
+// 2. it reads queries from the query reader and distributes them to the workers
+// 3. it waits for all the workers to finish and closes the results channel
+// 4. it waits for the metrics collector to finish and returns the aggregated metrics
+func (wp *WorkerPool) Run(ctx context.Context) (metrics.Result, error) {
+	wp.wgWorkers.Add(wp.numWorkers)
 	for i := 0; i < wp.numWorkers; i++ {
-		go worker(ctx, i, &wp.workerWg, wp.client, wp.queries[wp.lastWorkerIdx], wp.results)
-		wp.lastWorkerIdx = (wp.lastWorkerIdx + 1) % wp.numWorkers
-	}
-}
-
-// RunQuery allocates a worker to run a query on the WorkerPool
-// Thread safety: `lastWorkerIdx` is not thread safe
-func (wp *WorkerPool) RunQuery(ctx context.Context, query query.Query) error {
-	if queryWorker, ok := wp.mapHostnameToWorker[query.Hostname]; ok {
-		return runQuery(ctx, queryWorker, query)
+		go wp.worker(ctx, wp.queries[i])
 	}
 
-	queryWorker := wp.queries[wp.lastWorkerIdx]
-	wp.lastWorkerIdx = (wp.lastWorkerIdx + 1) % wp.numWorkers
-	wp.mapHostnameToWorker[query.Hostname] = queryWorker
-	return runQuery(ctx, queryWorker, query)
-}
+	wp.wgMetrics.Add(1)
+	go wp.CollectMetrics()
 
-func runQuery(ctx context.Context, queryWorker chan query.Query, query query.Query) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case queryWorker <- query:
-		return nil
-	}
-}
-
-// SendMetrics sends the results from the workers to our metrics aggregator
-func (wp *WorkerPool) SendMetrics(ctx context.Context, done chan<- bool) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
-		case result, ok := <-wp.results:
-			if !ok {
-				done <- true
-				return
-			}
-			wp.simpleMetrics.AddResponse(result.Duration)
+			return metrics.Result{}, ctx.Err()
+		default:
+		}
+
+		query, hasMore, err := wp.queryReader.Next()
+		if !hasMore {
+			break
+		}
+		if err != nil {
+			log.Printf("warning: skipped reading query due to error: %v", err)
+			wp.sendSkipped(ctx)
+			continue
+		}
+		if err := wp.sendQuery(ctx, query); err != nil {
+			return metrics.Result{}, err
 		}
 	}
-}
 
-// AggregateMetrics aggregates the metrics from the workers
-func (wp *WorkerPool) AggregateMetrics() metrics.Result {
-	return wp.simpleMetrics.Aggregate()
-}
-
-// Close all the query channels and the results channel in order to terminate the workers
-// Thread safety: waits for all workers to finish before closing channels
-func (wp *WorkerPool) Close() {
-	// Close query channels to signal workers to stop
-	for _, queryWorker := range wp.queries {
-		close(queryWorker)
+	for i := 0; i < wp.numWorkers; i++ {
+		close(wp.queries[i])
 	}
-
-	// Wait for all workers to finish
-	wp.workerWg.Wait()
-
-	// Now it's safe to close the results channel
+	wp.wgWorkers.Wait()
 	close(wp.results)
+	wp.wgMetrics.Wait()
+
+	return wp.simpleMetrics.Aggregate(), nil
 }
 
-func worker(ctx context.Context, id int, wg *sync.WaitGroup, client client.Client, queries <-chan query.Query, results chan<- Result) {
-	defer wg.Done()
+func (wp *WorkerPool) sendQuery(ctx context.Context, query query.Query) error {
+	queryChan := wp.getWorker(query.Hostname)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case queryChan <- query:
+	}
+	return nil
+}
+
+func (wp *WorkerPool) sendResult(ctx context.Context, result Result) {
+	select {
+	case <-ctx.Done():
+		return
+	case wp.results <- result:
+	}
+}
+
+func (wp *WorkerPool) sendSkipped(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		return
+	case wp.results <- Result{skipped: true}:
+	}
+}
+
+func (wp *WorkerPool) sendFailed(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		return
+	case wp.results <- Result{failed: true}:
+	}
+}
+
+func (wp *WorkerPool) worker(ctx context.Context, queries <-chan query.Query) {
+	defer wp.wgWorkers.Done()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -160,19 +184,44 @@ func worker(ctx context.Context, id int, wg *sync.WaitGroup, client client.Clien
 			if !ok {
 				return
 			}
-			response, err := client.Query(query.Build())
+
+			response, err := wp.client.Query(query.Build())
 			if err != nil {
-				// TODO: handle error
-				log.Panicf("worker: id-%d error executing query: hostname-%s start_time-%s end_time-%s error-%v\n", id, query.Hostname, query.StartTime, query.EndTime, err)
-				return
+				log.Printf("worker: failed query: %v", err)
+				wp.sendFailed(ctx)
+				continue
 			}
 
-			select {
-			case results <- Result{Duration: response.Duration}:
-			case <-ctx.Done():
-				log.Panicf("worker: id-%d context cancelled, not sending result\n", id)
-				return
-			}
+			wp.sendResult(ctx, Result{Duration: response.Duration})
+		}
+	}
+}
+
+// getWorker returns the query channel for the given hostname
+// If the hostname is not mapped, it uses round robin
+func (wp *WorkerPool) getWorker(hostname string) chan query.Query {
+	if queryChan, exists := wp.mapHostnameToWorker[hostname]; exists {
+		return queryChan
+	}
+
+	queryChan := wp.queries[wp.lastWorkerIdx]
+	wp.mapHostnameToWorker[hostname] = queryChan
+	wp.lastWorkerIdx = (wp.lastWorkerIdx + 1) % wp.numWorkers
+	return queryChan
+}
+
+// CollectMetrics collects results from the results channel and updates metrics
+// Since this is unbounded, acts a sync mechanism, we could have multiple metrics collectors
+// Then we would need to make our metrics thread safe
+func (wp *WorkerPool) CollectMetrics() {
+	defer wp.wgMetrics.Done()
+	for result := range wp.results {
+		if result.skipped {
+			wp.simpleMetrics.AddSkipped()
+		} else if result.failed {
+			wp.simpleMetrics.AddFailed()
+		} else {
+			wp.simpleMetrics.AddResponse(result.Duration)
 		}
 	}
 }

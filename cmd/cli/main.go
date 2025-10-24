@@ -47,49 +47,27 @@ func main() {
 		log.Fatalf("timeout must be greater than 0")
 	}
 
-	queryReader, err := query.NewReader(reader)
+	queryReader, err := query.NewQueryReader(reader)
 	if err != nil {
 		log.Fatalf("error reading query headers: %v", err)
+	}
+
+	client, err := client.NewTigerData()
+	if err != nil {
+		log.Fatalf("error creating client: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	wp, err := workerpool.New(numWorkers, client.NewTigerData())
+	wp, err := workerpool.New(numWorkers, client, queryReader)
 	if err != nil {
 		log.Fatalf("error creating worker pool: %v", err)
 	}
 
-	wp.RunWorkers(ctx)
-	done := make(chan bool)
-	go wp.SendMetrics(ctx, done)
-
-	for {
-		select {
-		case <-ctx.Done():
-			log.Fatalf("Context cancelled: %v", ctx.Err())
-		default:
-		}
-
-		query, hasMore, err := queryReader.Next()
-		if !hasMore {
-			break
-		}
-
-		if err != nil {
-			// TODO: send skipped query to metrics
-			log.Printf("warning: skipped reading query due to error: %v", err)
-			continue
-		}
-
-		if err := wp.RunQuery(ctx, query); err != nil {
-			log.Fatalf("Error running query: %v", err)
-		}
+	metrics, err := wp.Run(ctx)
+	if err != nil {
+		log.Fatalf("error: %v", err)
 	}
-
-	wp.Close()
-	<-done
-
-	metrics := wp.AggregateMetrics()
 	fmt.Printf("%v\n", metrics.Table())
 }

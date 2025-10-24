@@ -3,8 +3,8 @@ package client
 // TODO
 type TigerData struct{}
 
-func NewTigerData() *TigerData {
-	return &TigerData{}
+func NewTigerData() (*TigerData, error) {
+	return &TigerData{}, nil
 }
 
 // TODO probably we can simplify the interface and ping and smoke test in the constructor

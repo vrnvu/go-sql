@@ -27,3 +27,20 @@ Average Response: 1s
 Max Response: 1s
 
 ---
+
+[TestWorkerPoolIsCancel - 1]
+
+
+=====================
+Performance Metrics
+=====================
+Queries Processed: 0
+Skipped Queries: 0
+Failed Queries: 0
+Total Time: 0s
+Min Response: 0s
+Median Response: 0s
+Average Response: 0s
+Max Response: 0s
+
+---
