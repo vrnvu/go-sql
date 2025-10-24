@@ -54,7 +54,7 @@ I immidiatly thought about wrk, I've used it in the past.
     - Yes: we want to have skipped csv rows, failed/retries of queries
 - Resources to consider of the benchmarking instance:
     - CPU: Core / threads number, best ratio for M:N threading
-        - Yes: One core - One worker
+        - Yes: For CPU bound One core - One worker, in this example IO bound probably we can go up to ~1024.
     - MEM:
         - Yes: Can we load the input .csv in memory?
         - Yes: Can we store and aggregate results in-memory?

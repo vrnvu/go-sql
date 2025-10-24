@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"runtime"
 	"sync"
 	"time"
 
 	"github.com/vrnvu/go-sql/internal/client"
 	"github.com/vrnvu/go-sql/internal/metrics"
 	"github.com/vrnvu/go-sql/internal/query"
+)
+
+const (
+	MaxWorkers = 1024
 )
 
 // Result is a single query result, containing the worker ID, hostname, request start time, and request end time
@@ -56,8 +59,8 @@ func New(numWorkers int, client client.Client) (*WorkerPool, error) {
 		return nil, fmt.Errorf("number of workers must be greater than 0")
 	}
 
-	if numWorkers > runtime.NumCPU() {
-		return nil, fmt.Errorf("number of workers must be less than the number of CPUs")
+	if numWorkers > MaxWorkers {
+		return nil, fmt.Errorf("number of workers must be less than %d", MaxWorkers)
 	}
 
 	queries := make([]chan query.Query, numWorkers)

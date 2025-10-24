@@ -1,6 +1,6 @@
 
 [TestNewTooManyWorkers - 1]
-number of workers must be less than the number of CPUs
+number of workers must be less than 1024
 ---
 
 [TestNewZeroWorkers - 1]

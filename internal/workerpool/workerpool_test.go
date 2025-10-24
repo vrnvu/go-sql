@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"runtime"
 	"testing"
 	"time"
 
@@ -52,7 +51,7 @@ func Query(i int) (*query.Query, error) {
 func TestNewProperties(t *testing.T) {
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
-		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")
+		numWorkers := rapid.IntRange(1, MaxWorkers).Draw(t, "numWorkers")
 		wp, err := New(numWorkers, &testDeterministicClient{})
 		assert.NoError(t, err)
 		assert.NotNil(t, wp)
@@ -69,7 +68,7 @@ func TestNewZeroWorkers(t *testing.T) {
 
 func TestNewTooManyWorkers(t *testing.T) {
 	t.Parallel()
-	wp, err := New(runtime.NumCPU()+1, &testDeterministicClient{})
+	wp, err := New(MaxWorkers+1, &testDeterministicClient{})
 	assert.Error(t, err)
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
@@ -111,7 +110,7 @@ func TestSnapshot(t *testing.T) {
 	}
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
-		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")
+		numWorkers := rapid.IntRange(1, MaxWorkers).Draw(t, "numWorkers")
 		wp, err := New(numWorkers, &testDeterministicClient{})
 		assert.NoError(t, err)
 		assert.NotNil(t, wp)

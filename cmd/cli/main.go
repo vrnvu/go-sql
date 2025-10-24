@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/vrnvu/go-sql/internal/client"
@@ -38,10 +37,9 @@ func main() {
 		reader = csv.NewReader(file)
 	}
 
-	numCores := runtime.NumCPU()
-	if numWorkers < 1 || numCores < numWorkers {
+	if numWorkers < 1 || workerpool.MaxWorkers < numWorkers {
 		flag.Usage()
-		log.Fatalf("number of workers must be greater than 0 and less than the number of cores: %d", numCores)
+		log.Fatalf("number of workers: %d must be greater than 0 and less than %d", numWorkers, workerpool.MaxWorkers)
 	}
 
 	if timeoutSeconds < 0 {

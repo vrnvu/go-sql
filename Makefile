@@ -9,5 +9,8 @@ test:
 test-slow:
 	go test ./... -count=1 -race -v
 
+test-snap:
+	UPDATE_SNAPS=true go test ./...
+
 lint:
 	golangci-lint run --config .golangci.yml
