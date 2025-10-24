@@ -47,17 +47,6 @@ func main() {
 		log.Fatalf("timeout must be greater than 0")
 	}
 
-	fields, err := reader.Read()
-	if err != nil {
-		log.Fatalf("error reading fields: %v", err)
-	}
-	if len(fields) != 3 {
-		log.Fatalf("expected 3 fields, got %d", len(fields))
-	}
-	if fields[0] != "hostname" || fields[1] != "start_time" || fields[2] != "end_time" {
-		log.Fatalf("expected fields to be hostname, start_time, end_time, got %v", fields)
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
@@ -70,7 +59,11 @@ func main() {
 	done := make(chan bool)
 	go wp.SendMetrics(ctx, done)
 
-	queryReader := query.NewReader(reader)
+	queryReader, err := query.NewReader(reader)
+	if err != nil {
+		log.Fatalf("error reading query headers: %v", err)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():

@@ -16,38 +16,57 @@ type Query struct {
 }
 
 // Reader is a simple iterator for reading CSV queries
+// It does not run over the headers
 type Reader struct {
 	csvReader *csv.Reader
+	line      int
 }
 
 // NewReader creates a new query reader
-func NewReader(csvReader *csv.Reader) *Reader {
-	return &Reader{csvReader: csvReader}
+func NewReader(csvReader *csv.Reader) (*Reader, error) {
+	fields, err := csvReader.Read()
+	if err != nil {
+		return nil, fmt.Errorf("error reading headers: %w", err)
+	}
+	if len(fields) != 3 {
+		return nil, fmt.Errorf("expected 3 fields, got %d", len(fields))
+	}
+	if fields[0] != "hostname" || fields[1] != "start_time" || fields[2] != "end_time" {
+		return nil, fmt.Errorf("expected fields to be hostname, start_time, end_time, got %v", fields)
+	}
+
+	return &Reader{csvReader: csvReader, line: 2}, nil
 }
 
 // Next reads the next query from the CSV
 // Returns the query and a boolean indicating if there are more queries
 func (r *Reader) Next() (Query, bool, error) {
+	defer func() {
+		r.line++
+	}()
+
 	record, err := r.csvReader.Read()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return Query{}, false, nil
 		}
-		return Query{}, false, err
+		return Query{}, false, fmt.Errorf("error reading CSV record: %w on line %d", err, r.line)
 	}
 
 	if len(record) != 3 {
-		return Query{}, false, fmt.Errorf("invalid CSV record: expected 3 fields, got %d", len(record))
+		return Query{}, true, fmt.Errorf("invalid CSV record: expected 3 fields, got %d on line %d", len(record), r.line)
 	}
+
+	//TODO: we are not validating hostname format
 
 	startTime, err := time.Parse("2006-01-02 15:04:05", record[1])
 	if err != nil {
-		return Query{}, false, fmt.Errorf("invalid start_time format: %w", err)
+		return Query{}, true, fmt.Errorf("invalid start_time: %s err: %w on line %d", record[1], err, r.line)
 	}
 
 	endTime, err := time.Parse("2006-01-02 15:04:05", record[2])
 	if err != nil {
-		return Query{}, false, fmt.Errorf("invalid end_time format: %w", err)
+		return Query{}, true, fmt.Errorf("invalid end_time: %s err: %w on line %d", record[2], err, r.line)
 	}
 
 	query := Query{

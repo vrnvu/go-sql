@@ -2,3 +2,19 @@
 [TestQuerySnapshot - 1]
 SELECT * FROM cpu_usage WHERE hostname = host1 AND ts BETWEEN 2025-01-01 00:00:00 +0000 UTC AND 2025-01-01 00:00:01 +0000 UTC
 ---
+
+[TestQueryInvalidHeaderSnapshot - 1]
+expected 3 fields, got 2
+---
+
+[TestQueryInvalidRowSnapshot - 1]
+SELECT * FROM cpu_usage WHERE hostname = host_000001 AND ts BETWEEN 2017-01-01 08:59:22 +0000 UTC AND 2017-01-01 09:59:22 +0000 UTC
+---
+
+[TestQueryInvalidRowSnapshot - 2]
+invalid start_time: INVALID TIME HERE err: parsing time "INVALID TIME HERE" as "2006-01-02 15:04:05": cannot parse "INVALID TIME HERE" as "2006" on line 3
+---
+
+[TestQueryInvalidRowSnapshot - 3]
+error reading CSV record: record on line 4: wrong number of fields on line 4
+---
