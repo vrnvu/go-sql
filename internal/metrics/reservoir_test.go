@@ -42,6 +42,9 @@ func TestNewReservoirWithSizeTooManySize(t *testing.T) {
 }
 
 func TestReservoirAddResponseDoesNotPanicWhenMaxCapacityIsReached(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow: reservoir add response does not panic")
+	}
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		capacity := rapid.IntRange(1, ReservoirMaxCapacity).Draw(t, "capacity")

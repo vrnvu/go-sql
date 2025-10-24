@@ -4,7 +4,10 @@ run:
 	go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 4 -timeout 10
 
 test:
-	go test ./... -count=1 -race 
+	go test ./... -count=1 -race -short -v
+
+test-slow:
+	go test ./... -count=1 -race -v
 
 lint:
 	golangci-lint run --config .golangci.yml

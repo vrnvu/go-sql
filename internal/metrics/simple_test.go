@@ -38,6 +38,9 @@ func TestNewSimpleWithCapacityTooManyCapacity(t *testing.T) {
 }
 
 func TestSimpleAddResponsePanicsWhenMaxCapacityIsReached(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow: simple add response panics test")
+	}
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		capacity := rapid.IntRange(1, SimpleMaxCapacity).Draw(t, "capacity")

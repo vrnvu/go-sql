@@ -106,6 +106,9 @@ func TestWorkerPoolIsCancel(t *testing.T) {
 // This is a cool property test (imo)
 // We can prove our workerpool is deterministic in the number of workers
 func TestSnapshot(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow: workerpool snapshot")
+	}
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		numWorkers := rapid.IntRange(1, runtime.NumCPU()).Draw(t, "numWorkers")

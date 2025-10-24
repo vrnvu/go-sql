@@ -9,6 +9,9 @@ import (
 )
 
 func TestCompareSimpleAndReservoirWhenInSampleSize(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow: simple reservoir comparison")
+	}
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		// Since we are in the sample size, we expect the results to be the same
@@ -35,6 +38,9 @@ func TestCompareSimpleAndReservoirWhenInSampleSize(t *testing.T) {
 
 // This test can be used to generate snapshots and smoke tests
 func TestCompareSimpleAndReservoirWhenSampleSizeIsGreaterThanReservoirSampleSize(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow: simple reservoir comparison")
+	}
 	t.Parallel()
 	rapid.Check(t, func(t *rapid.T) {
 		// We start at a number big enough so we trigger the sampling algorithm
