@@ -8,5 +8,13 @@ capacity must be less than 20000
 ---
 
 [TestSimpleMetricsAggregate - 1]
-metrics.Result{NumberOfQueries:10, TotalProcessingTime:55000000000, MinResponse:1000000000, MedianResponse:6000000000, AverageResponse:5500000000, MaxResponse:10000000000}
+metrics.Result{NumberOfQueries:10, SkippedQueries:0, FailedQueries:0, TotalProcessingTime:55000000000, MinResponse:1000000000, MedianResponse:6000000000, AverageResponse:5500000000, MaxResponse:10000000000}
+---
+
+[TestAddSkippedAndFailedToMaxThenOverflow - 1]
+int(-9223372036854775808)
+---
+
+[TestAddSkippedAndFailedToMaxThenOverflow - 2]
+int(-9223372036854775808)
 ---

@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -89,4 +90,20 @@ func TestReservoirMetricsAggregate(t *testing.T) {
 	assert.Equal(t, 55*time.Second/10, result.AverageResponse)
 	assert.Equal(t, 10*time.Second, result.MaxResponse)
 	snaps.MatchSnapshot(t, result)
+}
+
+func TestReservoirAddSkippedAndFailedToMaxThenOverflow(t *testing.T) {
+	t.Parallel()
+	metrics := NewReservoir(func(n int) int {
+		return 0
+	})
+	metrics.skippedQueries = math.MaxInt64
+	metrics.failedQueries = math.MaxInt64
+
+	assert.Panics(t, func() {
+		metrics.AddSkipped()
+	})
+	assert.Panics(t, func() {
+		metrics.AddFailed()
+	})
 }

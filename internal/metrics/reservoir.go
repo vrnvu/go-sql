@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"fmt"
+	"log"
+	"math"
 	"slices"
 	"time"
 )
@@ -17,6 +19,8 @@ const (
 type Reservoir struct {
 	responses           []time.Duration
 	numberOfQueries     int
+	skippedQueries      int
+	failedQueries       int
 	totalProcessingTime time.Duration
 	minResponse         time.Duration
 	maxResponse         time.Duration
@@ -48,6 +52,20 @@ func NewReservoirWithSize(sampleSize int, funcRandIntn func(n int) int) (*Reserv
 		sampleSize:   sampleSize,
 		funcRandIntn: funcRandIntn,
 	}, nil
+}
+
+func (r *Reservoir) AddSkipped() {
+	if r.skippedQueries == math.MaxInt64 {
+		log.Panicf("skipped queries overflow")
+	}
+	r.skippedQueries++
+}
+
+func (r *Reservoir) AddFailed() {
+	if r.failedQueries == math.MaxInt64 {
+		log.Panicf("failed queries overflow")
+	}
+	r.failedQueries++
 }
 
 func (r *Reservoir) AddResponse(duration time.Duration) {
@@ -88,6 +106,8 @@ func (r *Reservoir) Aggregate() Result {
 
 	return Result{
 		NumberOfQueries:     r.numberOfQueries,
+		SkippedQueries:      r.skippedQueries,
+		FailedQueries:       r.failedQueries,
 		TotalProcessingTime: r.totalProcessingTime,
 		MinResponse:         r.minResponse,
 		MedianResponse:      medianResponse,

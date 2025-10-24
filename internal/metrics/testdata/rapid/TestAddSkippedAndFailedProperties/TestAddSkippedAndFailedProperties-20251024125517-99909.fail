@@ -1,0 +1,22 @@
+# 2025/10/24 12:55:17.287351 [TestAddSkippedAndFailedProperties] [rapid] draw numSkipped: -384660956033
+# 2025/10/24 12:55:17.287361 [TestAddSkippedAndFailedProperties] [rapid] draw numFailed: 109553
+# 2025/10/24 12:55:17.287418 [TestAddSkippedAndFailedProperties] 
+# 	Error Trace:	/Users/arnau/Documents/dev/c09d0e45-1776-4aa9-b800-ef2309328ce0/internal/metrics/simple_test.go:96
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/arnau/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/arnau/Documents/dev/c09d0e45-1776-4aa9-b800-ef2309328ce0/internal/metrics/simple_test.go:88
+# 	            				/opt/homebrew/Cellar/go/1.25.3/libexec/src/runtime/asm_arm64.s:1268
+# 	Error:      	Not equal: 
+# 	            	expected: -384660956033
+# 	            	actual  : 0
+# 	Test:       	TestAddSkippedAndFailedProperties
+# 
+v0.4.8#11836169702103690927
+0x18e681f32a50ba
+0x1d7e93e281d78e
+0x598f946380
+0xc68c32a3d5b3b
+0x1467fca938d71b
+0x1abf1

@@ -18,6 +18,8 @@ failed to ping client
 Performance Metrics
 =====================
 Queries Processed: 10
+Skipped Queries: 0
+Failed Queries: 0
 Total Time: 10s
 Min Response: 1s
 Median Response: 1s

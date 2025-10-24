@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"log"
+	"math"
 	"slices"
 	"time"
 )
@@ -15,8 +16,10 @@ const (
 // Simple metrics keeps everything in memory
 // Not scalable, but simple and easy to implement and we can use it to verify correctness of other implemntations
 type Simple struct {
-	responses []time.Duration
-	capacity  int
+	responses      []time.Duration
+	skippedQueries int
+	failedQueries  int
+	capacity       int
 }
 
 // NewSimple creates a new Simple metrics
@@ -54,6 +57,20 @@ func (s *Simple) AddResponse(duration time.Duration) {
 	s.responses = append(s.responses, duration)
 }
 
+func (s *Simple) AddSkipped() {
+	if s.skippedQueries == math.MaxInt64 {
+		log.Panicf("skipped queries overflow")
+	}
+	s.skippedQueries++
+}
+
+func (s *Simple) AddFailed() {
+	if s.skippedQueries == math.MaxInt64 {
+		log.Panicf("failed queries overflow")
+	}
+	s.failedQueries++
+}
+
 // Aggregate aggregates the responses into a Result
 func (s *Simple) Aggregate() Result {
 	slices.Sort(s.responses)
@@ -77,6 +94,8 @@ func (s *Simple) Aggregate() Result {
 
 	return Result{
 		NumberOfQueries:     numberOfQueries,
+		SkippedQueries:      s.skippedQueries,
+		FailedQueries:       s.failedQueries,
 		TotalProcessingTime: totalProcessingTime,
 		MinResponse:         minResponse,
 		MedianResponse:      medianResponse,

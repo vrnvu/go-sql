@@ -15,6 +15,8 @@ import (
 // - and the maximum query time.
 type Result struct {
 	NumberOfQueries     int
+	SkippedQueries      int
+	FailedQueries       int
 	TotalProcessingTime time.Duration
 	MinResponse         time.Duration
 	MedianResponse      time.Duration
@@ -28,6 +30,8 @@ func (r *Result) Table() string {
 	builder.WriteString("Performance Metrics\n")
 	builder.WriteString("=====================\n")
 	builder.WriteString(fmt.Sprintf("Queries Processed: %d\n", r.NumberOfQueries))
+	builder.WriteString(fmt.Sprintf("Skipped Queries: %d\n", r.SkippedQueries))
+	builder.WriteString(fmt.Sprintf("Failed Queries: %d\n", r.FailedQueries))
 	builder.WriteString(fmt.Sprintf("Total Time: %v\n", r.TotalProcessingTime))
 	builder.WriteString(fmt.Sprintf("Min Response: %v\n", r.MinResponse))
 	builder.WriteString(fmt.Sprintf("Median Response: %v\n", r.MedianResponse))

@@ -47,6 +47,11 @@ func main() {
 		log.Fatalf("timeout must be greater than 0")
 	}
 
+	queryReader, err := query.NewReader(reader)
+	if err != nil {
+		log.Fatalf("error reading query headers: %v", err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
@@ -59,11 +64,6 @@ func main() {
 	done := make(chan bool)
 	go wp.SendMetrics(ctx, done)
 
-	queryReader, err := query.NewReader(reader)
-	if err != nil {
-		log.Fatalf("error reading query headers: %v", err)
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -72,11 +72,14 @@ func main() {
 		}
 
 		query, hasMore, err := queryReader.Next()
-		if err != nil {
-			log.Fatalf("Error reading query: %v", err)
-		}
 		if !hasMore {
 			break
+		}
+
+		if err != nil {
+			// TODO: send skipped query to metrics
+			log.Printf("warning: skipped reading query due to error: %v", err)
+			continue
 		}
 
 		if err := wp.RunQuery(ctx, query); err != nil {
