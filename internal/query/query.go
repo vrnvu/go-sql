@@ -16,13 +16,12 @@ type Query struct {
 }
 
 // Reader is a simple iterator for reading CSV queries
-// It does not run over the headers
 type Reader struct {
 	csvReader *csv.Reader
 	line      int
 }
 
-// NewReader creates a new query reader
+// NewReader creates a new query reader and validates the headers
 func NewReader(csvReader *csv.Reader) (*Reader, error) {
 	fields, err := csvReader.Read()
 	if err != nil {
@@ -40,6 +39,7 @@ func NewReader(csvReader *csv.Reader) (*Reader, error) {
 
 // Next reads the next query from the CSV
 // Returns the query and a boolean indicating if there are more queries
+// Skips errors when reading invalid rows
 func (r *Reader) Next() (Query, bool, error) {
 	defer func() {
 		r.line++
