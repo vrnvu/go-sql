@@ -18,5 +18,8 @@ test-slow:
 test-snap:
 	UPDATE_SNAPS=true go test ./...
 
+test-cover:
+	go test ./... -count=1 -race -covermode=atomic -coverprofile=coverage.out
+
 lint:
 	golangci-lint run --config .golangci.yml
