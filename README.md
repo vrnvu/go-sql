@@ -5,6 +5,12 @@ I immidiatly thought about wrk, I've used it in the past.
 - [wrk](https://github.com/wg/wrk)
 - [wrk2](https://github.com/giltene/wrk2)
 
+## References TigerData:
+
+- [Docker setup](https://docs.tigerdata.com/self-hosted/latest/install/installation-docker/)
+- [Go client](https://docs.tigerdata.com/getting-started/latest/start-coding-with-timescale/)
+- [Architecture Whitepaper](https://assets.timescale.com/docs/downloads/tigerdata-whitepaper.pdf)
+
 ## Functional
 ### Comptime
     - Read file
