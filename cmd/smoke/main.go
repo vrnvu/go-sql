@@ -12,7 +12,7 @@ import (
 // Smoke test the TigerData database connectivity
 func main() {
 	ctx := context.Background()
-	connStr := "postgres://tigerdata:123@localhost:5432/tigerdata"
+	connStr := "postgres://tigerdata:123@localhost:5432/tigerdata" //nolint:gosec
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
