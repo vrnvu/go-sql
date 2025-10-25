@@ -36,3 +36,6 @@ docker-down:
 
 docker-logs:
 	docker-compose logs -f tigerdata
+
+docker-shell:
+	docker-compose exec tigerdata psql -U tigerdata -d homework
