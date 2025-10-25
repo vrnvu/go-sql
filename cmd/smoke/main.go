@@ -33,4 +33,18 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Found: %v\n", resp.Duration)
+
+	resp, err = client.Query(ctx, query.Build())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Found: %v\n", resp.Duration)
+
+	resp, err = client.Query(ctx, query.Build())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Found: %v\n", resp.Duration)
 }

@@ -55,6 +55,7 @@ func (t *TigerData) Query(ctx context.Context, query string) (*Response, error) 
 	defer rows.Close()
 	duration := time.Since(startTime)
 
+	// TODO: sync.Pool optimization? slower worker means less throughput per worker
 	var results []result
 	for rows.Next() {
 		var r result
