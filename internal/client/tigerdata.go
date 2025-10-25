@@ -17,7 +17,7 @@ type result struct {
 }
 
 func (r *result) String() string {
-	return fmt.Sprintf("ts: %s, host: %s, usage: %f", r.ts.Format(time.DateTime), r.host, r.usage)
+	return fmt.Sprintf("ts: %s, host: %s, usage: %f", r.ts.UTC().Format(time.DateTime), r.host, r.usage)
 }
 
 // TigerData client holds 1 connection to the database
