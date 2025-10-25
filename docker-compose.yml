@@ -1,0 +1,24 @@
+services:
+  tigerdata:
+    image: timescale/timescaledb:latest-pg16
+    container_name: tigerdata
+    environment:
+      POSTGRES_DB: tigerdata
+      POSTGRES_USER: tigerdata
+      POSTGRES_PASSWORD: 123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - tigerdata_data:/var/lib/postgresql/data
+      - ./resources/cpu_usage.sql:/docker-entrypoint-initdb.d/cpu_usage.sql
+      - ./resources/cpu_usage.csv:/csv/cpu_usage_short.csv
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tigerdata -d tigerdata"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  tigerdata_data:

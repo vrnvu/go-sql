@@ -1,4 +1,4 @@
-.PHONY: setup run test lint
+.PHONY: setup run test lint docker-up docker-down docker-logs docker-shell
 
 setup:
 	go mod download
@@ -7,6 +7,7 @@ setup:
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.5.0
 
 run:
+	@echo "Running: go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 4 -timeout 10"
 	go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 4 -timeout 10
 
 test:
@@ -23,3 +24,15 @@ test-cover:
 
 lint:
 	golangci-lint run --config .golangci.yml
+
+docker-up:
+	@echo "Starting TigerData database..."
+	docker-compose up -d
+	@echo "TigerData is running on localhost:5432"
+
+docker-down:
+	@echo "Stopping TigerData..."
+	docker-compose down
+
+docker-logs:
+	docker-compose logs -f tigerdata
