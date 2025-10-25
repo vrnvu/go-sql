@@ -52,13 +52,13 @@ func main() {
 		log.Fatalf("error reading query headers: %v", err)
 	}
 
-	client, err := client.NewTigerData()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	client, err := client.NewTigerData(ctx, "tigerdata", "123", "localhost", "5432", "homework")
 	if err != nil {
 		log.Fatalf("error creating client: %v", err)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
-	defer cancel()
 
 	wp, err := workerpool.New(numWorkers, client, queryReader)
 	if err != nil {

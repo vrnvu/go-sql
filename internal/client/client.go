@@ -1,6 +1,9 @@
 package client
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Response struct {
 	Duration time.Duration
@@ -8,5 +11,5 @@ type Response struct {
 
 type Client interface {
 	Ping() error
-	Query(query string) (*Response, error)
+	Query(ctx context.Context, query string) (*Response, error)
 }

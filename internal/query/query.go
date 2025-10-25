@@ -85,7 +85,9 @@ func (r *CSVReader) Next() (Query, bool, error) {
 
 // Build transforms the Query struct into the SQL query string
 // We could build the query directly from the .csv file, but a Query struct give us flexibility to add more fields in the future and try different query patterns
-// TODO
 func (q *Query) Build() string {
-	return fmt.Sprintf("SELECT * FROM cpu_usage WHERE hostname = %s AND ts BETWEEN %s AND %s", q.Hostname, q.StartTime, q.EndTime)
+	return fmt.Sprintf("SELECT * FROM cpu_usage WHERE host = '%s' AND ts BETWEEN '%s' AND '%s'",
+		q.Hostname,
+		q.StartTime.Format("2006-01-02 15:04:05"),
+		q.EndTime.Format("2006-01-02 15:04:05"))
 }

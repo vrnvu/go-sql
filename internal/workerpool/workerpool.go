@@ -185,7 +185,7 @@ func (wp *WorkerPool) worker(ctx context.Context, queries <-chan query.Query) {
 				return
 			}
 
-			response, err := wp.client.Query(query.Build())
+			response, err := wp.client.Query(ctx, query.Build())
 			if err != nil {
 				log.Printf("worker: failed query: %v", err)
 				wp.sendFailed(ctx)

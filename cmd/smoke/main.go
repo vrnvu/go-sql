@@ -5,25 +5,32 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/vrnvu/go-sql/internal/client"
+	"github.com/vrnvu/go-sql/internal/query"
 )
 
 // Smoke test the TigerData database connectivity
 func main() {
 	ctx := context.Background()
-	connStr := "postgres://tigerdata:123@localhost:5432/tigerdata" //nolint:gosec
-	conn, err := pgx.Connect(ctx, connStr)
+	client, err := client.NewTigerData(ctx, "tigerdata", "123", "localhost", "5432", "homework")
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		log.Fatalf("Unable to create client: %v\n", err)
 	}
-	defer conn.Close(ctx)
+	defer client.Close(ctx)
 
-	var greeting string
-	err = conn.QueryRow(ctx, "select 'Hello, Timescale!'").Scan(&greeting)
+	// TODO: snapshot test
+	query := query.Query{
+		Hostname:  "host_000010",
+		StartTime: time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	resp, err := client.Query(ctx, query.Build())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println(greeting)
+	fmt.Printf("Found: %v\n", resp.Duration)
 }
