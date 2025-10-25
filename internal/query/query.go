@@ -88,6 +88,6 @@ func (r *CSVReader) Next() (Query, bool, error) {
 func (q *Query) Build() string {
 	return fmt.Sprintf("SELECT * FROM cpu_usage WHERE host = '%s' AND ts BETWEEN '%s' AND '%s'",
 		q.Hostname,
-		q.StartTime.Format("2006-01-02 15:04:05"),
-		q.EndTime.Format("2006-01-02 15:04:05"))
+		q.StartTime.UTC().Format("2006-01-02 15:04:05"),
+		q.EndTime.UTC().Format("2006-01-02 15:04:05"))
 }

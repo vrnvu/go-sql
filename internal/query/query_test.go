@@ -16,10 +16,8 @@ func TestQuerySnapshot(t *testing.T) {
 	}
 
 	t.Parallel()
-	startTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:00")
-	assert.NoError(t, err)
-	endTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:01")
-	assert.NoError(t, err)
+	startTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	endTime := time.Date(2025, 1, 1, 0, 0, 1, 0, time.UTC)
 
 	query := Query{
 		Hostname:  "host1",

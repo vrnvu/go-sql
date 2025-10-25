@@ -67,14 +67,8 @@ func (t *testDeterministicClient) Query(_ context.Context, _ string) (*client.Re
 
 func testQuery(i int) (*query.Query, error) {
 	hostname := fmt.Sprintf("hostname-%d", i)
-	startTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:00")
-	if err != nil {
-		return nil, err
-	}
-	endTime, err := time.Parse(time.DateTime, "2025-01-01 00:00:01")
-	if err != nil {
-		return nil, err
-	}
+	startTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	endTime := time.Date(2025, 1, 1, 0, 0, 1, 0, time.UTC)
 	return &query.Query{Hostname: hostname, StartTime: startTime, EndTime: endTime}, nil
 }
 
