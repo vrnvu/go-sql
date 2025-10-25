@@ -1,6 +1,6 @@
 
 [TestQuerySnapshot - 1]
-SELECT * FROM cpu_usage WHERE hostname = host1 AND ts BETWEEN 2025-01-01 00:00:00 +0000 UTC AND 2025-01-01 00:00:01 +0000 UTC
+SELECT * FROM cpu_usage WHERE host = 'host1' AND ts BETWEEN '2025-01-01 00:00:00' AND '2025-01-01 00:00:01'
 ---
 
 [TestQueryInvalidHeaderSnapshot - 1]
@@ -8,7 +8,7 @@ expected 3 fields, got 2
 ---
 
 [TestQueryInvalidRowSnapshot - 1]
-SELECT * FROM cpu_usage WHERE hostname = host_000001 AND ts BETWEEN 2017-01-01 08:59:22 +0000 UTC AND 2017-01-01 09:59:22 +0000 UTC
+SELECT * FROM cpu_usage WHERE host = 'host_000001' AND ts BETWEEN '2017-01-01 08:59:22' AND '2017-01-01 09:59:22'
 ---
 
 [TestQueryInvalidRowSnapshot - 2]
