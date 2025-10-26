@@ -1,5 +1,3 @@
-CREATE DATABASE homework;
-\c homework
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE TABLE cpu_usage(
   ts    TIMESTAMPTZ,
