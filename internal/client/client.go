@@ -10,6 +10,6 @@ type Response struct {
 }
 
 type Client interface {
-	Ping() error
+	Ping(ctx context.Context) error
 	Query(ctx context.Context, query string) (*Response, error)
 }

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // result is a single row from the query
@@ -20,59 +21,100 @@ func (r *result) String() string {
 	return fmt.Sprintf("ts: %s, host: %s, usage: %f", r.ts.UTC().Format(time.DateTime), r.host, r.usage)
 }
 
-// TigerData client holds 1 connection to the database
+// TigerData client holds a connection pool to the database
 type TigerData struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
-func NewTigerData(ctx context.Context, user, password, host, port, dbname string) (*TigerData, error) {
+func NewTigerData(ctx context.Context, numberOfWorkers int, user, password, host, port, dbname string) (*TigerData, error) {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, password, host, port, dbname) //nolint:gosec
-	conn, err := pgx.Connect(ctx, connStr)
+
+	// Configure connection pool
+	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		return nil, fmt.Errorf("unable to parse connection string: %w", err)
 	}
 
-	return &TigerData{conn: conn}, nil
+	// Set pool size to fixed number of workers
+	config.MaxConns = int32(numberOfWorkers)
+	config.MinConns = int32(numberOfWorkers)
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create connection pool: %w", err)
+	}
+
+	return &TigerData{pool: pool}, nil
 }
 
+// Close closes the connection pool
 func (t *TigerData) Close(ctx context.Context) error {
-	return t.conn.Close(ctx)
+	t.pool.Close()
+	return nil
 }
 
 // Ping tests the connection to the database and validates the schema
-func (t *TigerData) Ping() error {
-	return nil
+func (t *TigerData) Ping(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	return t.pool.Ping(ctx)
 }
 
 func (t *TigerData) Query(ctx context.Context, query string) (*Response, error) {
 	startTime := time.Now()
-	rows, err := t.conn.Query(ctx, query)
-	if err != nil {
-		// TODO: handle retriable errors
-		// TODO: handle non-retriable errors
-		return nil, err
-	}
-	defer rows.Close()
-	duration := time.Since(startTime)
 
-	// TODO: sync.Pool optimization? slower worker means less throughput per worker
-	var results []result
-	for rows.Next() {
-		var r result
-		err := rows.Scan(&r.ts, &r.host, &r.usage)
+	maxRetries := 3
+	var lastErr error
+
+	for attempt := range maxRetries {
+		rows, err := t.pool.Query(ctx, query)
 		if err != nil {
-			return nil, err
+			lastErr = err
+			if isRetriableError(err) && attempt < maxRetries-1 {
+				log.Printf("tigerdata query error: %v, retrying...", err)
+				continue
+			}
+			return nil, lastErr
 		}
-		results = append(results, r)
+
+		if rows.Err() != nil {
+			log.Printf("tigerdata query error: %v", rows.Err())
+			rows.Close()
+			return nil, rows.Err()
+		}
+
+		rows.Close()
+
+		duration := time.Since(startTime)
+		return &Response{Duration: duration}, nil
 	}
 
-	if rows.Err() != nil {
-		// TODO: handle rows err if any
-		return nil, rows.Err()
+	return nil, lastErr
+}
+
+func isRetriableError(err error) bool {
+	if err == nil {
+		return false
 	}
 
-	for _, r := range results {
-		fmt.Println(r.String())
+	errStr := err.Error()
+	// TODO: tigerdata documentation on retriable errors
+	// https://www.tigerdata.com/blog/5-common-connection-errors-in-postgresql-and-how-to-solve-them
+	retriableErrors := []string{
+		"conn busy",
+		"connection reset",
+		"connection refused",
+		"timeout",
+		"temporary failure",
+		"server closed the connection",
+		"broken pipe",
 	}
-	return &Response{Duration: duration}, nil
+
+	for _, retriableErr := range retriableErrors {
+		if strings.Contains(errStr, retriableErr) {
+			return true
+		}
+	}
+
+	return false
 }

@@ -13,8 +13,9 @@ import (
 
 // Smoke test the TigerData database connectivity
 func main() {
+	numberOfWorkers := 4
 	ctx := context.Background()
-	client, err := client.NewTigerData(ctx, "tigerdata", "123", "localhost", "5432", "homework")
+	client, err := client.NewTigerData(ctx, numberOfWorkers, "tigerdata", "123", "localhost", "5432", "homework")
 	if err != nil {
 		log.Fatalf("Unable to create client: %v\n", err)
 	}
@@ -24,7 +25,7 @@ func main() {
 	query := query.Query{
 		Hostname:  "host_000010",
 		StartTime: time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2017, 1, 1, 0, 1, 0, 0, time.UTC), // 1 minute
 	}
 
 	resp, err := client.Query(ctx, query.Build())

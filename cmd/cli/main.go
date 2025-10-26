@@ -55,9 +55,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	client, err := client.NewTigerData(ctx, "tigerdata", "123", "localhost", "5432", "homework")
+	client, err := client.NewTigerData(ctx, numWorkers, "tigerdata", "123", "localhost", "5432", "homework")
 	if err != nil {
 		log.Fatalf("error creating client: %v", err)
+	}
+	defer client.Close(ctx)
+
+	if err := client.Ping(ctx); err != nil {
+		log.Fatalf("error pinging client: %v", err)
 	}
 
 	wp, err := workerpool.New(numWorkers, client, queryReader)
