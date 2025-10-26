@@ -7,8 +7,8 @@ setup:
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.5.0
 
 run:
-	@echo "Running: go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 4 -timeout 10"
-	go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 4 -timeout 10
+	@echo "Running: go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 64 -timeout 10"
+	go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 64 -timeout 10
 
 test:
 	go test ./... -count=1 -race -short 
