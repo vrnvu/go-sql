@@ -16,7 +16,6 @@ services:
     command: >
       bash -c "
         docker-entrypoint.sh postgres &
-        sleep 15
         psql -U tigerdata -d homework < /resources/01-cpu_usage.sql
         wait
       "
