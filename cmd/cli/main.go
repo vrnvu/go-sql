@@ -18,10 +18,20 @@ func main() {
 	var inputPath string
 	var numWorkers int
 	var timeoutSeconds int
+	var dbUser string
+	var dbPassword string
+	var dbHost string
+	var dbPort string
+	var dbName string
 
 	flag.StringVar(&inputPath, "input", "", "Path to input CSV (defaults to stdin)")
 	flag.IntVar(&numWorkers, "workers", 0, "Number of workers to use (defaults to number of cores)")
 	flag.IntVar(&timeoutSeconds, "timeout", 600, "Timeout in seconds (defaults to 600 seconds)")
+	flag.StringVar(&dbUser, "db-user", "tigerdata", "Database username")
+	flag.StringVar(&dbPassword, "db-password", "123", "Database password")
+	flag.StringVar(&dbHost, "db-host", "localhost", "Database host")
+	flag.StringVar(&dbPort, "db-port", "5432", "Database port")
+	flag.StringVar(&dbName, "db-name", "homework", "Database name")
 	flag.Parse()
 
 	var reader *csv.Reader
@@ -55,7 +65,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	client, err := client.NewTigerData(ctx, numWorkers, "tigerdata", "123", "localhost", "5432", "homework")
+	client, err := client.NewTigerData(ctx, numWorkers, dbUser, dbPassword, dbHost, dbPort, dbName)
 	if err != nil {
 		log.Fatalf("error creating client: %v", err)
 	}

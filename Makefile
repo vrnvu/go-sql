@@ -7,8 +7,16 @@ setup:
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.5.0
 
 run:
-	@echo "Running: go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 64 -timeout 10"
-	go run ./cmd/cli/main.go -input ./resources/query_params.csv -workers 64 -timeout 10
+	@echo "Running: go run ./cmd/cli/main.go with database configuration..."
+	go run ./cmd/cli/main.go \
+		-input ./resources/query_params.csv \
+		-workers 64 \
+		-timeout 10 \
+		-db-user tigerdata \
+		-db-password 123 \
+		-db-host localhost \
+		-db-port 5432 \
+		-db-name homework
 
 test:
 	go test ./... -count=1 -race -short 

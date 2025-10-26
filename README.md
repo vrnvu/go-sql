@@ -1,3 +1,34 @@
+# Quickstart
+
+```
+git clone https://github.com/vrnvu/go-sql
+cd go-sql
+make setup
+make lint
+make test
+make docker-up
+make test-slow
+make run
+make docker-down
+```
+
+make run:
+```
+	go run ./cmd/cli/main.go \
+		-input ./resources/query_params.csv \
+		-workers 64 \
+		-timeout 10 \
+		-db-user tigerdata \
+		-db-password 123 \
+		-db-host localhost \
+		-db-port 5432 \
+		-db-name homework
+```
+
+- for testing: test and test-slow
+- test-slow requires docker up for integration test with the docker instance
+- test-slow does property testing and DST (deterministic simulation testing)
+
 # Specs
 
 ## References:
