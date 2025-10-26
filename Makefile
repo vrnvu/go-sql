@@ -27,15 +27,15 @@ lint:
 
 docker-up:
 	@echo "Starting TigerData database..."
-	docker-compose up -d
+	docker compose up -d
 	@echo "TigerData is running on localhost:5432"
 
 docker-down:
 	@echo "Stopping TigerData..."
-	docker-compose down
+	docker compose down
 
 docker-logs:
-	docker-compose logs -f tigerdata
+	docker compose logs -f tigerdata
 
 docker-shell:
-	docker-compose exec tigerdata psql -U tigerdata -d homework
+	docker compose exec tigerdata psql -U tigerdata -d homework
