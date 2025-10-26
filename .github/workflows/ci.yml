@@ -29,6 +29,9 @@ jobs:
       - name: Setup dependencies and tools
         run: make setup
 
+      - name: Start TigerData database
+        run: make docker-up
+
       - name: Lint
         run: make lint
 
@@ -37,3 +40,7 @@ jobs:
 
       - name: Run slow tests
         run: make test-slow
+
+      - name: Stop TigerData database
+        if: always()
+        run: make docker-down
