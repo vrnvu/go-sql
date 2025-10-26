@@ -25,7 +25,7 @@ func main() {
 	var dbName string
 
 	flag.StringVar(&inputPath, "input", "", "Path to input CSV (defaults to stdin)")
-	flag.IntVar(&numWorkers, "workers", 0, "Number of workers to use (defaults to number of cores)")
+	flag.IntVar(&numWorkers, "workers", 0, "Number of workers to use")
 	flag.IntVar(&timeoutSeconds, "timeout", 600, "Timeout in seconds (defaults to 600 seconds)")
 	flag.StringVar(&dbUser, "db-user", "tigerdata", "Database username")
 	flag.StringVar(&dbPassword, "db-password", "123", "Database password")
