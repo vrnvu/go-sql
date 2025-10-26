@@ -10,8 +10,15 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - tigerdata_data:/var/lib/postgresql/data
       - ./resources/cpu_usage.sql:/docker-entrypoint-initdb.d/01-cpu_usage.sql
       - ./resources/cpu_usage.csv:/csv/cpu_usage.csv
+    command: >
+      bash -c "
+        docker-entrypoint.sh postgres &
+        psql -U tigerdata -d homework -f /docker-entrypoint-initdb.d/01-cpu_usage.sql
+        wait
+      "
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tigerdata -d homework"]
       interval: 10s
