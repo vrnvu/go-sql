@@ -118,6 +118,11 @@ The tool consists of several key components:
 - Query Reader (`internal/query`): CSV parsing and query generation
 - Metrics (`internal/metrics`): Performance measurement and aggregation. Two implementations.
 
+<img width="733" height="356" alt="Screenshot 2025-10-26 at 14 24 43" src="https://github.com/user-attachments/assets/7c04d73d-5fe2-432b-b813-f8bcf1909779" />
+<img width="373" height="168" alt="Screenshot 2025-10-26 at 14 24 55" src="https://github.com/user-attachments/assets/60dc6bd2-46ef-4f8a-838b-d3037e5051da" />
+<img width="330" height="418" alt="Screenshot 2025-10-26 at 14 24 52" src="https://github.com/user-attachments/assets/5204b3fc-6f5d-45d5-a063-14c24199417b" />
+
+
 ### Performance Metrics Output
 The tool provides detailed performance metrics in a formatted table:
 ```
