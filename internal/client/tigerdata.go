@@ -10,16 +10,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// TODO: unused, do we need to verify anything?
 // result is a single row from the query
-type result struct {
-	ts    time.Time
-	host  string
-	usage float64
-}
+// type result struct {
+// 	ts    time.Time
+// 	host  string
+// 	usage float64
+// }
 
-func (r *result) String() string {
-	return fmt.Sprintf("ts: %s, host: %s, usage: %f", r.ts.UTC().Format(time.DateTime), r.host, r.usage)
-}
+// func (r *result) String() string {
+// 	return fmt.Sprintf("ts: %s, host: %s, usage: %f", r.ts.UTC().Format(time.DateTime), r.host, r.usage)
+// }
 
 // TigerData client holds a connection pool to the database
 type TigerData struct {
@@ -36,8 +37,8 @@ func NewTigerData(ctx context.Context, numberOfWorkers int, user, password, host
 	}
 
 	// Set pool size to fixed number of workers
-	config.MaxConns = int32(numberOfWorkers)
-	config.MinConns = int32(numberOfWorkers)
+	config.MaxConns = int32(numberOfWorkers) //nolint:gosec
+	config.MinConns = int32(numberOfWorkers) //nolint:gosec
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
@@ -48,7 +49,7 @@ func NewTigerData(ctx context.Context, numberOfWorkers int, user, password, host
 }
 
 // Close closes the connection pool
-func (t *TigerData) Close(ctx context.Context) error {
+func (t *TigerData) Close() error {
 	t.pool.Close()
 	return nil
 }

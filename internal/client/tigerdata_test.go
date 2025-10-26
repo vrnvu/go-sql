@@ -20,7 +20,7 @@ func TestNewTigerPing(t *testing.T) {
 	client, err := NewTigerData(ctx, numberOfWorkers, "tigerdata", "123", "localhost", "5432", "homework")
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
-	defer client.Close(ctx)
+	defer client.Close()
 
 	err = client.Ping(ctx)
 	assert.NoError(t, err)
@@ -38,7 +38,7 @@ func TestTigerDataQuery(t *testing.T) {
 	client, err := NewTigerData(ctx, numberOfWorkers, "tigerdata", "123", "localhost", "5432", "homework")
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
-	defer client.Close(ctx)
+	defer client.Close()
 
 	err = client.Ping(ctx)
 	assert.NoError(t, err)

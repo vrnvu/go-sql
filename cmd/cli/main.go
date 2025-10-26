@@ -59,7 +59,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating client: %v", err)
 	}
-	defer client.Close(ctx)
+	defer client.Close()
 
 	if err := client.Ping(ctx); err != nil {
 		log.Fatalf("error pinging client: %v", err)

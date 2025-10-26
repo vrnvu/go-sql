@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to create client: %v\n", err)
 	}
-	defer client.Close(ctx)
+	defer client.Close()
 
 	// TODO: snapshot test
 	query := query.Query{
