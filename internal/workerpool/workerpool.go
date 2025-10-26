@@ -51,6 +51,7 @@ type WorkerPool struct {
 
 	queryReader         query.Reader
 	queries             []chan query.Query
+	wgQueries           sync.WaitGroup
 	results             chan Result
 	mapHostnameToWorker map[string]chan query.Query
 	lastWorkerIdx       int
@@ -100,12 +101,11 @@ func New(numWorkers int, client client.Client, queryReader query.Reader) (*Worke
 // 3. it waits for all the workers to finish and closes the results channel
 // 4. it waits for the metrics collector to finish and returns the aggregated metrics
 func (wp *WorkerPool) Run(ctx context.Context) (metrics.Result, error) {
-	wp.wgWorkers.Add(wp.numWorkers)
 	for i := 0; i < wp.numWorkers; i++ {
+		wp.wgWorkers.Add(1)
 		go wp.worker(ctx, wp.queries[i])
 	}
 
-	wp.wgMetrics.Add(1)
 	go wp.CollectMetrics()
 
 	for {
@@ -124,29 +124,42 @@ func (wp *WorkerPool) Run(ctx context.Context) (metrics.Result, error) {
 			wp.sendSkipped(ctx)
 			continue
 		}
-		if err := wp.sendQuery(ctx, query); err != nil {
-			return metrics.Result{}, err
-		}
+
+		queryChan := wp.getWorker(query.Hostname)
+		wp.wgQueries.Add(1)
+		go wp.sendQuery(ctx, queryChan, query)
 	}
 
+	// wait for all the queries to be sent to the workers
+	wp.wgQueries.Wait()
+
+	// close the query channels after all the queries are sent to the workers
 	for i := 0; i < wp.numWorkers; i++ {
 		close(wp.queries[i])
 	}
+
+	// wait for all the workers to process all the queries
 	wp.wgWorkers.Wait()
+
+	// close the results channel after all the workers have processed all the queries
 	close(wp.results)
+
+	// wait for the metrics collector to finish collecting metrics from results
 	wp.wgMetrics.Wait()
 
 	return wp.simpleMetrics.Aggregate(), nil
 }
 
-func (wp *WorkerPool) sendQuery(ctx context.Context, query query.Query) error {
-	queryChan := wp.getWorker(query.Hostname)
+func (wp *WorkerPool) sendQuery(ctx context.Context, queryChan chan query.Query, query query.Query) {
+	defer func() {
+		wp.wgQueries.Done()
+	}()
+
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return
 	case queryChan <- query:
 	}
-	return nil
 }
 
 func (wp *WorkerPool) sendResult(ctx context.Context, result Result) {
@@ -214,6 +227,7 @@ func (wp *WorkerPool) getWorker(hostname string) chan query.Query {
 // Since this is unbounded, acts a sync mechanism, we could have multiple metrics collectors
 // Then we would need to make our metrics thread safe
 func (wp *WorkerPool) CollectMetrics() {
+	wp.wgMetrics.Add(1)
 	defer wp.wgMetrics.Done()
 	for result := range wp.results {
 		if result.skipped {
