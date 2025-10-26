@@ -1,9 +1,62 @@
 # Specs
 
 ## References:
-I immidiatly thought about wrk, I've used it in the past. 
+I immediately thought about wrk, I've used it in the past. 
 - [wrk](https://github.com/wg/wrk)
 - [wrk2](https://github.com/giltene/wrk2)
+
+## Sample data distribution:
+
+I did some basic analysis to understand sample data and understand how the workers behavior is going to change depending on the input.  This is useful to generate multiple input samples that make sense statistically.
+
+```
+sources/cpu_usage.csv
+Loaded 345600 records from resources/cpu_usage.csv
+
+Host Distribution Analysis:
+Total unique hosts: 20
+
+Top 10 hosts by record count:
+1. host_000010: 17280 records
+2. host_000017: 17280 records
+3. host_000011: 17280 records
+4. host_000000: 17280 records
+5. host_000004: 17280 records
+6. host_000007: 17280 records
+7. host_000009: 17280 records
+8. host_000014: 17280 records
+9. host_000015: 17280 records
+10. host_000016: 17280 records
+```
+
+- Since sample data is perfectly evenly distributed our workers should have exact loads, but it may be skewed in which our benchmark tool will have low throughput and under-used workers.
+
+CPU:
+```
+CPU Usage Distribution:
+Min: 0.00%
+Max: 100.00%
+Mean: 50.01%
+Median: 49.99%
+Standard Deviation: 833.48%
+```
+- This gives us an idea of expected results, in case we want to verify the queried results. I won't verify it.
+
+Another observation from sample data is host appear in order:
+```
+2017-01-01 00:00:00,host_000000,92.77
+2017-01-01 00:00:00,host_000001,76.26
+2017-01-01 00:00:00,host_000002,6.94
+2017-01-01 00:00:00,host_000003,76.03
+...
+2017-01-01 00:00:00,host_000017,28.05
+2017-01-01 00:00:00,host_000018,12.09
+2017-01-01 00:00:00,host_000019,90.35
+```
+
+- We are sequentially reading the csv and assigning to workers, and each worker does 1 request, and they appear in order
+- Reading from file (DISK) should be faster than query (NET), so our csvreader shouldn't wait workers
+- This affects how efficient the workerpool is.
 
 ## References TigerData:
 
@@ -25,20 +78,20 @@ I immidiatly thought about wrk, I've used it in the past.
             - Smoke test: one row via prepared statement and validate serialization
     - Set number of workers/clients
         - Yes: Hard limit workers? 
-            - i.e workers <= number_of_phisical_cores?
+            - Hard limit is 1024
 ### Runtime
     - Yes: Mapping hostmap = worker (simple Round Robin baseline)
     - Error handling?
-        - Yes: If something panics or context is cancel abort benchmark
+        - Yes: If something panics or context is cancelled abort benchmark
         - Yes: What if a request to TigerData fails? Do we backoff/retry?   
             - It's important that we don't panic and retry instead, then mark as failed
     - Connections
         - Pool size, per-worker connections, simple backoff/retries?
-            Yes: N workers, 1 connection per worker, 3 retries without backof are fine
+            Yes: N workers, 1 connection per worker, 3 retries without backoff are fine
     - Logging and aggregation
         - Yes: Logs will be simple
         - No: We don't need fancy visualizations of data
-        - Yes: Print data aggregation as a simple table string() in stdout
+        - Yes: Print data aggregation as a simple table string() to stdout
 - Future enhancements (not needed now)
     - Take ideas from wrk/wrk2 (precise rate to TigerData)
     - Expand into e2e/integration tests
@@ -46,10 +99,10 @@ I immidiatly thought about wrk, I've used it in the past.
         - Note: Workerpool module needs re-work if we would like to expose as library so coroutine and ctx management is simpler
 
 ## Non Functional:
-- Correctness: What happens if “somethings” panics?
+- Correctness: What happens if "something" panics?
     - Note: If this is a benchmark tool, my first instinct is to consider the full test a failure. It needs to be fully repeated.
-    - Note: If otherwise we continued the test, i.e a worker panics but we spawn another to recover on runtime, the throughput and load in our target TigerData instance will be altered. Particularly affecting tail latency and throughput if system gets over-loaded.
-    - Yes: We will panic only when major events that affect the correctness of the system, i.e a worker completly crashes
+    - Note: If otherwise we continued the test, i.e a worker panics but we spawn another to recover on runtime, the throughput and load in our target TigerData instance will be altered. Particularly affecting tail latency and throughput if system gets overloaded.
+    - Yes: We will panic only when major events that affect the correctness of the system, i.e a worker completely crashes
     - Yes: Simple retries on HTTP queries to TigerData, skip invalid rows in .csv
     - No: No need to have snapshots or recoveries
     - Note: Similarly, seems to me it doesn’t make sense to persist intermediate data to a file.
@@ -74,7 +127,7 @@ I immidiatly thought about wrk, I've used it in the past.
 - Security
     - What assumptions about tool security usages can we make?
     - Do we need to protect the TigerData instance from possible exploits in our CLI?
-    - No: We no need for particular attention
+    - No: We do not need for particular attention
 
 ## Design (TODO)
 
@@ -84,7 +137,7 @@ High level:
 
 - cli: the cli sets the target, number of workers, timeout and input IO (stdin or file).
 - csv reader / query generator: reads our input IO and generates queries, streams them to our worker pool as they are generated.
-- worker pool: loadbalances to workers, the worker makes the http request and publishes results to a channel, aggregates metrics collected from the results
+- worker pool: load balances to workers, the worker makes the http request and publishes results to a channel, aggregates metrics collected from the results
 
 
 Worker details:
@@ -102,7 +155,7 @@ Connection:
 
 - A worker will do a connection to TigerData to assert connectivity.
 - Note: We could do here a first smoke test to get one row from the table to validate correctness of the system itself.
-- After that we can start our benchmark, a simple design given 1 worker = 1 connection is to just send the queries sequentially and mesure timings.
+- After that we can start our benchmark, a simple design given 1 worker = 1 connection is to just send the queries sequentially and measure timings.
 - Collecting results is aggregating all our data t0, t1, ... tN, for every queryN.
 
 ## Metrics aggregation design
@@ -122,12 +175,12 @@ Min, max:
 For avg and median:
 - Depends on metrics design
 - avg = (avg * count * newDuration) / (count + 1)
-    - Confirm if this math *always* 
+    - Confirm if this math *always* works 
 - median, depends on our aggregation approach and what % of error is acceptable
     - T-digest algorithm
     - P^2 algorithm
  
-What we can notice this can be fully implemented and tested as a separete module and injected to our worker pool later.
+What we can notice this can be fully implemented and tested as a separate module and injected to our worker pool later.
 
 ------
 
@@ -136,16 +189,16 @@ Additional first thoughts, notes and details:
 - IO heavy
     - Read from stdin or file
         - file: if fits memory we can mmap first then process
-        - udated: according to the assignment the reading and parsing time of the queries is negligible, but in a real benchmark tool we care about total time of execution as well!
+        - updated: according to the assignment the reading and parsing time of the queries is negligible, but in a real benchmark tool we care about total time of execution as well!
 - Langs: Rust or Go
-    - updated: I choose Go probably simpler if we focus only care on IO time of each request
+    - updated: I choose Go probably simpler if we focus only on IO time of each request
 - 1 core:thread per worker (baseline)
     - updated: With Go we can't distinguish M:N as we use `go run(...)` but will do if we spawn co-routines ourselves. 
 - Simple Round Robin distribution between workers
     - Enhancements: other load balancing ideas
         - Push/Pull queues - workers strategy
 - Map existing hosts to workers
-    - updated; hostname => worker, we can use a round robin
+    - updated: hostname => worker, we can use a round robin
 - Pre-process query creation if everything fits MEM, simpler and more throughput
     - Load .csv, for every row convert to sql query, then run queries
     - We can store the sql queries in a snapshot if this is expensive
