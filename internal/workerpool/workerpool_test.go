@@ -3,7 +3,6 @@ package workerpool
 import (
 	"context"
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -41,23 +40,9 @@ func (t *testQueryReader) Next() (query.Query, bool, error) {
 	return *testQuery, true, nil
 }
 
-type testFailedPingClient struct{}
-
-func (t *testFailedPingClient) Ping() error {
-	return errors.New("ping failed")
-}
-
-func (t *testFailedPingClient) Query(_ context.Context, _ string) (*client.Response, error) {
-	// Random sleep so propety testing is more useful
-	// TODO: missing a seed here to have DST(deterministic simulation testing)
-	randomSleep := rand.Intn(10) //nolint:gosec
-	time.Sleep(time.Duration(randomSleep) * time.Millisecond)
-	return nil, nil
-}
-
 type testDeterministicClient struct{}
 
-func (t *testDeterministicClient) Ping() error {
+func (t *testDeterministicClient) Ping(_ context.Context) error {
 	return nil
 }
 
@@ -94,14 +79,6 @@ func TestNewTooManyWorkers(t *testing.T) {
 	t.Parallel()
 	wp, err := New(MaxWorkers+1, &testDeterministicClient{}, &testQueryReader{maxCalls: 10})
 	assert.Error(t, err)
-	assert.Nil(t, wp)
-	snaps.MatchSnapshot(t, err.Error())
-}
-
-func TestClientPingFailed(t *testing.T) {
-	t.Parallel()
-
-	wp, err := New(1, &testFailedPingClient{}, &testQueryReader{maxCalls: 10})
 	assert.Nil(t, wp)
 	snaps.MatchSnapshot(t, err.Error())
 }

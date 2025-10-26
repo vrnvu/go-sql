@@ -77,11 +77,6 @@ func New(numWorkers int, client client.Client, queryReader query.Reader) (*Worke
 		queries[i] = make(chan query.Query)
 	}
 
-	// TODO probably we can simplify the interface and ping and smoke test in the constructor
-	if client.Ping() != nil {
-		return nil, fmt.Errorf("failed to ping client")
-	}
-
 	return &WorkerPool{
 		queryReader:         queryReader,
 		client:              client,
@@ -111,12 +106,14 @@ func (wp *WorkerPool) Run(ctx context.Context) (metrics.Result, error) {
 	for {
 		select {
 		case <-ctx.Done():
+			log.Printf("context done: %v", ctx.Err())
 			return metrics.Result{}, ctx.Err()
 		default:
 		}
 
 		query, hasMore, err := wp.queryReader.Next()
 		if !hasMore {
+			log.Printf("no more queries")
 			break
 		}
 		if err != nil {
